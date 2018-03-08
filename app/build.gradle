@@ -1,0 +1,76 @@
+apply plugin: 'com.android.application'
+
+apply plugin: 'kotlin-android'
+
+apply plugin: 'kotlin-android-extensions'
+
+apply plugin: 'com.jakewharton.butterknife'
+
+android {
+    compileSdkVersion 27
+    defaultConfig {
+        applicationId "id.dpapayas.photoshoots"
+        minSdkVersion 15
+        targetSdkVersion 27
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        ndk {
+            abiFilters "armeabi-v7a", "x86"
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            debuggable false
+            jniDebuggable false
+            renderscriptDebuggable false
+            pseudoLocalesEnabled false
+            zipAlignEnabled true
+        }
+    }
+
+    splits {
+        density {
+            enable true
+            exclude 'ldpi', 'tvdpi'
+            compatibleScreens 'small', 'normal', 'large', 'xlarge'
+        }
+    }
+}
+
+ext {
+    support = '27.1.0'
+    glide = '3.7.0'
+    playServices = '11.0.2'
+    butterknife = '8.8.1'
+    sdp = '1.0.4'
+    retrofit = '2.1.0'
+    gson = '2.7'
+    materialColor = '1.1.0'
+    firebase = '11.8.0'
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation"org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
+    //noinspection GradleCompatible
+    implementation "com.android.support:support-core-utils:$support"
+    implementation "com.android.support:cardview-v7:$support"
+    implementation "com.android.support:appcompat-v7:$support"
+    implementation "com.android.support:design:$support"
+    implementation "com.jakewharton:butterknife:$butterknife"
+    implementation "com.android.support:support-v4:$support"
+    implementation "com.android.support:recyclerview-v7:$support"
+    implementation "com.android.support:cardview-v7:$support"
+    implementation "com.google.code.gson:gson:$gson"
+    implementation "com.intuit.sdp:sdp-android:$sdp"
+    implementation 'com.afollestad.material-dialogs:core:0.9.6.0'
+    implementation "com.google.firebase:firebase-core:$firebase"
+    implementation 'com.android.support.constraint:constraint-layout:1.0.2'
+    annotationProcessor "com.jakewharton:butterknife-compiler:$butterknife"
+    testImplementation 'junit:junit:4.12'
+    androidTestImplementation 'com.android.support.test:runner:1.0.1'
+    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
+}
