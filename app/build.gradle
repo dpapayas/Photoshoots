@@ -69,6 +69,9 @@ dependencies {
     implementation 'com.afollestad.material-dialogs:core:0.9.6.0'
     implementation "com.google.firebase:firebase-core:$firebase"
     implementation 'com.android.support.constraint:constraint-layout:1.0.2'
+    implementation 'com.amazonaws:aws-android-sdk-core:2.3.3'
+    implementation 'com.amazonaws:aws-android-sdk-s3:2.3.3'
+    implementation 'com.amazonaws:aws-android-sdk-ddb:2.3.3'
     annotationProcessor "com.jakewharton:butterknife-compiler:$butterknife"
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.1'

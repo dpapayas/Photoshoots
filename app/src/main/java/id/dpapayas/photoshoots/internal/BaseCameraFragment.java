@@ -93,25 +93,9 @@ abstract class BaseCameraFragment extends Fragment implements CameraUriInterface
     }
 
     protected void setImageRes(ImageView iv, @DrawableRes int res) {
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && iv.getBackground() instanceof RippleDrawable) {
-//            RippleDrawable rd = (RippleDrawable) iv.getBackground();
-//            rd.setColor(ColorStateList.valueOf(CameraUtil.adjustAlpha(mIconTextColor, 0.3f)));
-//        }
-//        Drawable d = AppCompatResources.getDrawable(iv.getContext(), res);
-//        d = DrawableCompat.wrap(d.mutate());
-//        DrawableCompat.setTint(d, mIconTextColor);
-//        iv.setImageDrawable(d);
     }
 
     protected void setImageRes(TextView iv, @DrawableRes int res) {
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && iv.getBackground() instanceof RippleDrawable) {
-//            RippleDrawable rd = (RippleDrawable) iv.getBackground();
-//            rd.setColor(ColorStateList.valueOf(CameraUtil.adjustAlpha(mIconTextColor, 0.3f)));
-//        }
-//        Drawable d = AppCompatResources.getDrawable(iv.getContext(), res);
-//        d = DrawableCompat.wrap(d.mutate());
-//        DrawableCompat.setTint(d, mIconTextColor);
-//        iv.setBackground(d);
     }
 
     @SuppressLint("SetTextI18n")

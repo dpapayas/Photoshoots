@@ -32,11 +32,14 @@
             android:layout_toRightOf="@+id/layHeadLeft">
 
             <EditText
+                android:id="@+id/etSearch"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_marginBottom="@dimen/_10sdp"
                 android:layout_marginTop="@dimen/_10sdp"
                 android:background="@drawable/rounded_bordered_blue"
+                android:paddingLeft="@dimen/_10sdp"
+                android:paddingRight="@dimen/_10sdp"
                 android:textCursorDrawable="@drawable/custom_cursor_black" />
 
         </RelativeLayout>
