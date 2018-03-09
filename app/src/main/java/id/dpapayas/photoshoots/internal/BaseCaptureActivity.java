@@ -1,6 +1,7 @@
 package id.dpapayas.photoshoots.internal;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Fragment;
 import android.content.DialogInterface;
@@ -37,9 +38,6 @@ import id.dpapayas.photoshoots.camera.MaterialCamera;
 import id.dpapayas.photoshoots.camera.TimeLimitReachedException;
 import id.dpapayas.photoshoots.util.CameraUtil;
 
-/**
- * @author Aidan Follestad (afollestad)
- */
 public abstract class BaseCaptureActivity extends AppCompatActivity implements BaseCaptureInterface {
 
     private int mCameraPosition = CAMERA_POSITION_UNKNOWN;
@@ -198,16 +196,19 @@ public abstract class BaseCaptureActivity extends AppCompatActivity implements B
             finish();
     }
 
+    @SuppressLint("ResourceAsColor")
     @Override
     public final void onBackPressed() {
         final Fragment frag = getFragmentManager().findFragmentById(R.id.container);
         if (frag != null) {
             if (frag instanceof PreviewFragment && allowRetry()) {
                 new MaterialDialog.Builder(this)
-                        .title("提示")
-                        .content("确定要返回重新拍摄吗？")
-                        .positiveText("确认")
-                        .negativeText("取消")
+                        .title("Test")
+                        .content("Test Content？")
+                        .positiveText("Yes")
+                        .negativeText("No")
+                        .positiveColor(R.color.blue_primary)
+                        .negativeColor(R.color.red)
                         .onPositive(new MaterialDialog.SingleButtonCallback() {
                             @Override
                             public void onClick(@NonNull MaterialDialog materialDialog, @NonNull DialogAction dialogAction) {
@@ -218,10 +219,12 @@ public abstract class BaseCaptureActivity extends AppCompatActivity implements B
                 return;
             } else if (frag instanceof BaseCameraFragment) {
                 new MaterialDialog.Builder(this)
-                        .title("提示")
-                        .content("退出将丢失拍摄内容，确定要放弃此次拍摄吗?")
-                        .positiveText("确认")
-                        .negativeText("取消")
+                        .title("Test")
+                        .content("Test Content?")
+                        .positiveText("Yes")
+                        .negativeText("No")
+                        .positiveColor(R.color.blue_primary)
+                        .negativeColor(R.color.red)
                         .onPositive(new MaterialDialog.SingleButtonCallback() {
                             @Override
                             public void onClick(@NonNull MaterialDialog materialDialog, @NonNull DialogAction dialogAction) {
@@ -230,9 +233,6 @@ public abstract class BaseCaptureActivity extends AppCompatActivity implements B
                             }
                         })
                         .show();
-                return;
-            } else if (frag instanceof BaseGalleryFragment && allowRetry()) {
-                onRetry(((CameraUriInterface) frag).getOutputUri());
                 return;
             }
         }

@@ -17,27 +17,17 @@
             android:id="@+id/record_back"
             android:layout_width="@dimen/_30sdp"
             android:layout_height="@dimen/_30sdp"
-            android:src="@drawable/zero_back_icon"
-            android:layout_centerVertical="true"/>
+            android:layout_centerVertical="true"
+            android:src="@drawable/zero_back_icon" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerInParent="true"
-            android:text="Test"
-            android:textColor="#777"
-            android:textSize="16sp" />
+            android:text="Preview Video"
+            android:textColor="@color/blue_primary"
+            android:textSize="@dimen/_12sdp" />
 
-        <TextView
-            android:id="@+id/record_next"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentRight="true"
-            android:layout_centerVertical="true"
-            android:padding="9dp"
-            android:text="OK"
-            android:textColor="#777"
-            android:textSize="13dp" />
     </RelativeLayout>
 
     <RelativeLayout
@@ -52,8 +42,8 @@
 
         <ImageView
             android:id="@+id/record_play"
-            android:layout_width="@dimen/_30sdp"
-            android:layout_height="@dimen/_30sdp"
+            android:layout_width="@dimen/_40sdp"
+            android:layout_height="@dimen/_40sdp"
             android:layout_centerInParent="true"
             android:padding="9dp"
             android:src="@drawable/video_icon"

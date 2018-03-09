@@ -1,5 +1,6 @@
 package id.dpapayas.photoshoots.internal;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Fragment;
 import android.content.Intent;
@@ -47,7 +48,6 @@ public class PreviewFragment extends Fragment implements View.OnClickListener, C
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
             uri = getArguments().getString("output_uri");
-//            type = getArguments().getInt("type");
         }
     }
 
@@ -103,16 +103,18 @@ public class PreviewFragment extends Fragment implements View.OnClickListener, C
         }
     }
 
+    @SuppressLint("ResourceAsColor")
     private void hideFragment() {
         new MaterialDialog.Builder(getActivity())
-                .title("提示")
-                .content("要放弃当前拍摄的视频吗？")
-                .positiveText("确认")
-                .negativeText("取消")
+                .title("Test")
+                .content("Test Content？")
+                .positiveText("Yes")
+                .negativeText("No")
+                .positiveColor(R.color.blue_primary)
+                .negativeColor(R.color.red)
                 .onPositive(new MaterialDialog.SingleButtonCallback() {
                     @Override
                     public void onClick(@NonNull MaterialDialog materialDialog, @NonNull DialogAction dialogAction) {
-                        //重新拍摄
                         mInterface.onRetry(getOutputUri());
                     }
                 })
