@@ -2,47 +2,59 @@ package id.dpapayas.photoshoots;
 
 import android.content.Context;
 import android.content.Intent;
-import android.content.res.Resources;
-import android.graphics.Rect;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.TypedValue;
+import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.ImageView;
+import android.widget.EditText;
 import android.widget.RelativeLayout;
 
-import com.bumptech.glide.Glide;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonArrayRequest;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
-import id.dpapayas.photoshoots.adapter.DashboardAdapter;
-import id.dpapayas.photoshoots.model.ItemModel;
+import id.dpapayas.photoshoots.adapter.GalleryAdapter;
+import id.dpapayas.photoshoots.model.Image;
+import id.dpapayas.photoshoots.util.SpacesItemDecoration;
 
 /**
  * Created by dpapayas on 3/8/18.
  */
 
 public class DashboardActivity extends AppCompatActivity {
+
+
     @BindView(R.id.layHeadLeft)
     RelativeLayout layHeadLeft;
+    @BindView(R.id.etSearch)
+    EditText etSearch;
     @BindView(R.id.layHeadRight)
     RelativeLayout layHeadRight;
     @BindView(R.id.layHeader)
     RelativeLayout layHeader;
-    @BindView(R.id.rvGrid)
-    RecyclerView rvGrid;
-    DashboardAdapter adapter;
-    private List<ItemModel> albumList;
+    @BindView(R.id.recycler_view)
+    RecyclerView recyclerView;
+
+    private String TAG = DashboardActivity.class.getSimpleName();
+    private static final String endpoint = "https://api.androidhive.info/json/glide.json";
+    private ArrayList<Image> images;
+    private GalleryAdapter mAdapter;
+
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -50,31 +62,18 @@ public class DashboardActivity extends AppCompatActivity {
         setContentView(R.layout.activity_dashboard);
         ButterKnife.bind(this);
 
-        albumList = new ArrayList<>();
+        images = new ArrayList<>();
+        mAdapter = new GalleryAdapter(getApplicationContext(), images);
 
-        adapter = new DashboardAdapter(this, albumList);
+        RecyclerView.LayoutManager mLayoutManager = new GridLayoutManager(getApplicationContext(), 3);
+        recyclerView.setLayoutManager(mLayoutManager);
+        recyclerView.setItemAnimator(new DefaultItemAnimator());
+        recyclerView.setAdapter(mAdapter);
 
-        RecyclerView.LayoutManager mLayoutManager = new GridLayoutManager(this, 2);
-        rvGrid.setLayoutManager(mLayoutManager);
-        rvGrid.addItemDecoration(new GridSpacingItemDecoration(2, dpToPx(10), true));
-        rvGrid.setItemAnimator(new DefaultItemAnimator());
-        rvGrid.setAdapter(adapter);
+        int spacingInPixels = getResources().getDimensionPixelSize(R.dimen._1sdp);
+        recyclerView.addItemDecoration(new SpacesItemDecoration(spacingInPixels));
 
-        prepareAlbums();
-
-        rvGrid.addOnItemTouchListener(new RecyclerTouchListener(this,
-                rvGrid, new ClickListener() {
-            @Override
-            public void onClick(View view, final int position) {
-                Intent intent = new Intent(DashboardActivity.this, PreviewVideoActivity.class);
-                startActivity(intent);
-            }
-
-            @Override
-            public void onLongClick(View view, int position) {
-
-            }
-        }));
+        fetchImages();
 
     }
 
@@ -88,59 +87,6 @@ public class DashboardActivity extends AppCompatActivity {
                 startActivity(intent);
                 break;
         }
-    }
-
-    private void prepareAlbums() {
-        int[] covers = new int[]{
-                R.drawable.images};
-
-        ItemModel a = new ItemModel("Jokowi & JK", "12122014", covers[0]);
-        albumList.add(a);
-
-        ItemModel b = new ItemModel("Ahok Jarot", "12122014", covers[0]);
-        albumList.add(b);
-
-        adapter.notifyDataSetChanged();
-    }
-
-    public class GridSpacingItemDecoration extends RecyclerView.ItemDecoration {
-
-        private int spanCount;
-        private int spacing;
-        private boolean includeEdge;
-
-        public GridSpacingItemDecoration(int spanCount, int spacing, boolean includeEdge) {
-            this.spanCount = spanCount;
-            this.spacing = spacing;
-            this.includeEdge = includeEdge;
-        }
-
-        @Override
-        public void getItemOffsets(Rect outRect, View view, RecyclerView parent, RecyclerView.State state) {
-            int position = parent.getChildAdapterPosition(view); // item position
-            int column = position % spanCount; // item column
-
-            if (includeEdge) {
-                outRect.left = spacing - column * spacing / spanCount; // spacing - column * ((1f / spanCount) * spacing)
-                outRect.right = (column + 1) * spacing / spanCount; // (column + 1) * ((1f / spanCount) * spacing)
-
-                if (position < spanCount) { // top edge
-                    outRect.top = spacing;
-                }
-                outRect.bottom = spacing; // item bottom
-            } else {
-                outRect.left = column * spacing / spanCount; // column * ((1f / spanCount) * spacing)
-                outRect.right = spacing - (column + 1) * spacing / spanCount; // spacing - (column + 1) * ((1f /    spanCount) * spacing)
-                if (position >= spanCount) {
-                    outRect.top = spacing; // item top
-                }
-            }
-        }
-    }
-
-    private int dpToPx(int dp) {
-        Resources r = getResources();
-        return Math.round(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp, r.getDisplayMetrics()));
     }
 
     class RecyclerTouchListener implements RecyclerView.OnItemTouchListener {
@@ -193,4 +139,45 @@ public class DashboardActivity extends AppCompatActivity {
 
         public void onLongClick(View view, int position);
     }
+
+    private void fetchImages() {
+
+        JsonArrayRequest req = new JsonArrayRequest(endpoint,
+                new Response.Listener<JSONArray>() {
+                    @Override
+                    public void onResponse(JSONArray response) {
+                        Log.d(TAG, response.toString());
+
+                        images.clear();
+                        for (int i = 0; i < response.length(); i++) {
+                            try {
+                                JSONObject object = response.getJSONObject(i);
+                                Image image = new Image();
+                                image.setName(object.getString("name"));
+
+                                JSONObject url = object.getJSONObject("url");
+                                image.setSmall(url.getString("small"));
+                                image.setMedium(url.getString("medium"));
+                                image.setLarge(url.getString("large"));
+                                image.setTimestamp(object.getString("timestamp"));
+
+                                images.add(image);
+
+                            } catch (JSONException e) {
+                                Log.e(TAG, "Json parsing error: " + e.getMessage());
+                            }
+                        }
+
+                        mAdapter.notifyDataSetChanged();
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.e(TAG, "Error: " + error.getMessage());
+            }
+        });
+
+        AppController.getInstance().addToRequestQueue(req);
+    }
+
 }

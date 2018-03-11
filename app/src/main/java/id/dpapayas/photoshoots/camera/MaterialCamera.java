@@ -15,6 +15,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.StringRes;
 import android.support.v4.content.ContextCompat;
+import android.util.Log;
 
 import com.afollestad.materialdialogs.util.DialogUtils;
 
@@ -26,12 +27,14 @@ import id.dpapayas.photoshoots.R;
 import id.dpapayas.photoshoots.internal.CameraIntentKey;
 import id.dpapayas.photoshoots.util.CameraUtil;
 
+@SuppressWarnings("WeakerAccess")
 public class MaterialCamera {
+
+    private static final String TAG = "MaterialCamera";
 
     @IntDef({QUALITY_HIGH, QUALITY_LOW, QUALITY_480P, QUALITY_720P, QUALITY_1080P})
     @Retention(RetentionPolicy.SOURCE)
-    public @interface QualityProfile {
-    }
+    public @interface QualityProfile {}
 
     public static final int QUALITY_HIGH = CamcorderProfile.QUALITY_HIGH;
     public static final int QUALITY_LOW = CamcorderProfile.QUALITY_LOW;
@@ -41,6 +44,7 @@ public class MaterialCamera {
 
     public static final String ERROR_EXTRA = "mcam_error";
     public static final String STATUS_EXTRA = "mcam_status";
+    public static final String DELETE_UPLOAD_FILE_EXTRA = "mcam_delete_upload_file";
 
     public static final int STATUS_RECORDED = 1;
     public static final int STATUS_RETRY = 2;
@@ -199,9 +203,7 @@ public class MaterialCamera {
         return this;
     }
 
-    /**
-     * @deprecated Renamed to videoEncodingBitRate(int).
-     */
+    /** @deprecated Renamed to videoEncodingBitRate(int). */
     @Deprecated
     public MaterialCamera videoBitRate(@IntRange(from = 1, to = Integer.MAX_VALUE) int rate) {
         return videoEncodingBitRate(rate);
@@ -222,12 +224,14 @@ public class MaterialCamera {
         return this;
     }
 
-    public MaterialCamera videoPreferredHeight(@IntRange(from = 1, to = Integer.MAX_VALUE) int height) {
+    public MaterialCamera videoPreferredHeight(
+            @IntRange(from = 1, to = Integer.MAX_VALUE) int height) {
         mVideoPreferredHeight = height;
         return this;
     }
 
-    public MaterialCamera videoPreferredAspect(@FloatRange(from = 0.1, to = Float.MAX_VALUE) float ratio) {
+    public MaterialCamera videoPreferredAspect(
+            @FloatRange(from = 0.1, to = Float.MAX_VALUE) float ratio) {
         mVideoPreferredAspect = ratio;
         return this;
     }
@@ -283,9 +287,9 @@ public class MaterialCamera {
     }
 
     @Deprecated
-    /*
-        This has been replaced with labelConfirm
-     */
+  /*
+     This has been replaced with labelConfirm
+  */
     public MaterialCamera labelUseVideo(@StringRes int stringRes) {
         mLabelConfirm = stringRes;
         return this;
@@ -296,87 +300,80 @@ public class MaterialCamera {
         return this;
     }
 
-    /**
-     * Will take a still shot instead of recording.
-     */
+    /** Will take a still shot instead of recording. */
     public MaterialCamera stillShot() {
         mStillShot = true;
         return this;
     }
 
-    public MaterialCamera autoRecordWithDelayMs(@IntRange(from = -1, to = Long.MAX_VALUE) long delayMillis) {
+    public MaterialCamera autoRecordWithDelayMs(
+            @IntRange(from = -1, to = Long.MAX_VALUE) long delayMillis) {
         mAutoRecord = delayMillis;
         return this;
     }
 
-    public MaterialCamera autoRecordWithDelaySec(@IntRange(from = -1, to = Long.MAX_VALUE) int delaySeconds) {
+    public MaterialCamera autoRecordWithDelaySec(
+            @IntRange(from = -1, to = Long.MAX_VALUE) int delaySeconds) {
         mAutoRecord = delaySeconds * 1000;
         return this;
     }
 
-    public Intent getIntent(boolean showGuide) {
-        final Class<?> cls = !mForceCamera1 && CameraUtil.hasCamera2(mContext, mStillShot) ?
-                CaptureActivity2.class : CaptureActivity.class;
-        Intent intent = new Intent(mContext, cls)
-                .putExtra(CameraIntentKey.LENGTH_LIMIT, mLengthLimit)
-                .putExtra(CameraIntentKey.ALLOW_RETRY, mAllowRetry)
-                .putExtra(CameraIntentKey.AUTO_SUBMIT, mAutoSubmit)
-                .putExtra(CameraIntentKey.SAVE_DIR, mSaveDir)
-                .putExtra(CameraIntentKey.PRIMARY_COLOR, mPrimaryColor)
-                .putExtra(CameraIntentKey.SHOW_PORTRAIT_WARNING, mShowPortraitWarning)
-                .putExtra(CameraIntentKey.ALLOW_CHANGE_CAMERA, mAllowChangeCamera)
-                .putExtra(CameraIntentKey.DEFAULT_TO_FRONT_FACING, mDefaultToFrontFacing)
-                .putExtra(CameraIntentKey.COUNTDOWN_IMMEDIATELY, mCountdownImmediately)
-                .putExtra(CameraIntentKey.RETRY_EXITS, mRetryExists)
-                .putExtra(CameraIntentKey.RESTART_TIMER_ON_RETRY, mRestartTimerOnRetry)
-                .putExtra(CameraIntentKey.CONTINUE_TIMER_IN_PLAYBACK, mContinueTimerInPlayback)
-                .putExtra(CameraIntentKey.STILL_SHOT, mStillShot)
-                .putExtra(CameraIntentKey.AUTO_RECORD, mAutoRecord)
-                .putExtra(CameraIntentKey.AUDIO_DISABLED, mAudioDisabled);
+    public Intent getIntent() {
+        Log.d(TAG, "getIntent: has camera2: " + CameraUtil.hasCamera2(mContext, mStillShot));
+        Log.d(TAG, "getIntent: force camera1: " + mForceCamera1);
+        final Class<?> cls =
+//        !mForceCamera1 && CameraUtil.hasCamera2(mContext, mStillShot)
+                !mForceCamera1
+                        ? CaptureActivity2.class
+                        : CaptureActivity.class;
+        Intent intent =
+                new Intent(mContext, cls)
+                        .putExtra(CameraIntentKey.LENGTH_LIMIT, mLengthLimit)
+                        .putExtra(CameraIntentKey.ALLOW_RETRY, mAllowRetry)
+                        .putExtra(CameraIntentKey.AUTO_SUBMIT, mAutoSubmit)
+                        .putExtra(CameraIntentKey.SAVE_DIR, mSaveDir)
+                        .putExtra(CameraIntentKey.PRIMARY_COLOR, mPrimaryColor)
+                        .putExtra(CameraIntentKey.SHOW_PORTRAIT_WARNING, mShowPortraitWarning)
+                        .putExtra(CameraIntentKey.ALLOW_CHANGE_CAMERA, mAllowChangeCamera)
+                        .putExtra(CameraIntentKey.DEFAULT_TO_FRONT_FACING, mDefaultToFrontFacing)
+                        .putExtra(CameraIntentKey.COUNTDOWN_IMMEDIATELY, mCountdownImmediately)
+                        .putExtra(CameraIntentKey.RETRY_EXITS, mRetryExists)
+                        .putExtra(CameraIntentKey.RESTART_TIMER_ON_RETRY, mRestartTimerOnRetry)
+                        .putExtra(CameraIntentKey.CONTINUE_TIMER_IN_PLAYBACK, mContinueTimerInPlayback)
+                        .putExtra(CameraIntentKey.STILL_SHOT, mStillShot)
+                        .putExtra(CameraIntentKey.AUTO_RECORD, mAutoRecord)
+                        .putExtra(CameraIntentKey.AUDIO_DISABLED, mAudioDisabled);
 
         if (mVideoEncodingBitRate > 0)
             intent.putExtra(CameraIntentKey.VIDEO_BIT_RATE, mVideoEncodingBitRate);
         if (mAudioEncodingBitRate > 0)
             intent.putExtra(CameraIntentKey.AUDIO_ENCODING_BIT_RATE, mAudioEncodingBitRate);
-        if (mVideoFrameRate > 0)
-            intent.putExtra(CameraIntentKey.VIDEO_FRAME_RATE, mVideoFrameRate);
+        if (mVideoFrameRate > 0) intent.putExtra(CameraIntentKey.VIDEO_FRAME_RATE, mVideoFrameRate);
         if (mVideoPreferredHeight > 0)
             intent.putExtra(CameraIntentKey.VIDEO_PREFERRED_HEIGHT, mVideoPreferredHeight);
         if (mVideoPreferredAspect > 0f)
             intent.putExtra(CameraIntentKey.VIDEO_PREFERRED_ASPECT, mVideoPreferredAspect);
-        if (mMaxFileSize > -1)
-            intent.putExtra(CameraIntentKey.MAX_ALLOWED_FILE_SIZE, mMaxFileSize);
-        if (mQualityProfile > -1)
-            intent.putExtra(CameraIntentKey.QUALITY_PROFILE, mQualityProfile);
+        if (mMaxFileSize > -1) intent.putExtra(CameraIntentKey.MAX_ALLOWED_FILE_SIZE, mMaxFileSize);
+        if (mQualityProfile > -1) intent.putExtra(CameraIntentKey.QUALITY_PROFILE, mQualityProfile);
 
-        if (mIconRecord != 0)
-            intent.putExtra(CameraIntentKey.ICON_RECORD, mIconRecord);
-        if (mIconStop != 0)
-            intent.putExtra(CameraIntentKey.ICON_STOP, mIconStop);
-        if (mIconFrontCamera != 0)
-            intent.putExtra(CameraIntentKey.ICON_FRONT_CAMERA, mIconFrontCamera);
-        if (mIconRearCamera != 0)
-            intent.putExtra(CameraIntentKey.ICON_REAR_CAMERA, mIconRearCamera);
-        if (mIconPlay != 0)
-            intent.putExtra(CameraIntentKey.ICON_PLAY, mIconPlay);
-        if (mIconPause != 0)
-            intent.putExtra(CameraIntentKey.ICON_PAUSE, mIconPause);
-        if (mIconRestart != 0)
-            intent.putExtra(CameraIntentKey.ICON_RESTART, mIconRestart);
-        if (mLabelRetry != 0)
-            intent.putExtra(CameraIntentKey.LABEL_RETRY, mLabelRetry);
-        if (mLabelConfirm != 0)
-            intent.putExtra(CameraIntentKey.LABEL_CONFIRM, mLabelConfirm);
-        intent.putExtra("showGuide",showGuide);
+        if (mIconRecord != 0) intent.putExtra(CameraIntentKey.ICON_RECORD, mIconRecord);
+        if (mIconStop != 0) intent.putExtra(CameraIntentKey.ICON_STOP, mIconStop);
+        if (mIconFrontCamera != 0) intent.putExtra(CameraIntentKey.ICON_FRONT_CAMERA, mIconFrontCamera);
+        if (mIconRearCamera != 0) intent.putExtra(CameraIntentKey.ICON_REAR_CAMERA, mIconRearCamera);
+        if (mIconPlay != 0) intent.putExtra(CameraIntentKey.ICON_PLAY, mIconPlay);
+        if (mIconPause != 0) intent.putExtra(CameraIntentKey.ICON_PAUSE, mIconPause);
+        if (mIconRestart != 0) intent.putExtra(CameraIntentKey.ICON_RESTART, mIconRestart);
+        if (mLabelRetry != 0) intent.putExtra(CameraIntentKey.LABEL_RETRY, mLabelRetry);
+        if (mLabelConfirm != 0) intent.putExtra(CameraIntentKey.LABEL_CONFIRM, mLabelConfirm);
+
         return intent;
     }
 
-    public void start(int requestCode,boolean showGuide) {
+    public void start(int requestCode) {
         if (mIsFragment && mSupportFragment != null)
-            mSupportFragment.startActivityForResult(getIntent(showGuide), requestCode);
+            mSupportFragment.startActivityForResult(getIntent(), requestCode);
         else if (mIsFragment && mAppFragment != null)
-            mAppFragment.startActivityForResult(getIntent(showGuide), requestCode);
-        else
-            mActivityContext.startActivityForResult(getIntent(showGuide), requestCode);
+            mAppFragment.startActivityForResult(getIntent(), requestCode);
+        else mActivityContext.startActivityForResult(getIntent(), requestCode);
     }
 }

@@ -10,7 +10,6 @@ public class CaptureActivity2 extends BaseCaptureActivity {
     @Override
     @NonNull
     public Fragment getFragment() {
-        this.setCanShowGuide(this.showGuide());
         return Camera2Fragment.newInstance();
     }
 }

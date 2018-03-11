@@ -1,8 +1,5 @@
 package id.dpapayas.photoshoots.internal;
 
-/**
- * @author Aidan Follestad (afollestad)
- */
 public class CameraIntentKey {
 
     private CameraIntentKey() {

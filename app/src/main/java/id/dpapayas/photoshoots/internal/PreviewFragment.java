@@ -72,7 +72,7 @@ public class PreviewFragment extends Fragment implements View.OnClickListener, C
             videoView.setVideoURI(Uri.parse(uri));
             videoView.start();
         } else {
-            Toast.makeText(getActivity(), "视频地址错误", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getActivity(), "Test", Toast.LENGTH_SHORT).show();
         }
         videoView.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
             @Override
@@ -93,7 +93,7 @@ public class PreviewFragment extends Fragment implements View.OnClickListener, C
                 videoView.start();
                 play.setVisibility(View.GONE);
             } else {
-                Toast.makeText(getActivity(), "视频地址错误", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getActivity(), "Test", Toast.LENGTH_SHORT).show();
             }
         } else if (id == R.id.record_next) {
             Intent intent = new Intent();

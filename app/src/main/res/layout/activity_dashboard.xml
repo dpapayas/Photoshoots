@@ -22,7 +22,7 @@
             <ImageView
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:background="@drawable/ic8_inbox" />
+                android:background="@drawable/ic8_user" />
         </RelativeLayout>
 
         <RelativeLayout
@@ -63,7 +63,7 @@
 
     <View
         android:layout_width="match_parent"
-        android:layout_height="@dimen/_1sdp"
+        android:layout_height="0.7dp"
         android:layout_below="@+id/layHeader"
         android:background="@color/blue_primary"></View>
 
@@ -73,12 +73,10 @@
         android:layout_below="@+id/layHeader">
 
         <android.support.v7.widget.RecyclerView
-            android:id="@+id/rvGrid"
+            android:id="@+id/recycler_view"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:scrollbars="vertical"
-            app:layout_behavior="@string/appbar_scrolling_view_behavior" />
-
+            android:layout_height="wrap_content"
+            android:scrollbars="vertical" />
 
     </RelativeLayout>
 

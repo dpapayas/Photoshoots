@@ -1,17 +1,19 @@
 package id.dpapayas.photoshoots.internal;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
-import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.Fragment;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.media.CamcorderProfile;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.DrawableRes;
 import android.support.annotation.IntDef;
 import android.support.annotation.NonNull;
@@ -21,24 +23,47 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.app.AppCompatDelegate;
+import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.FrameLayout;
+import android.widget.ProgressBar;
+import android.widget.Toast;
 
-import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
+import id.dpapayas.photoshoots.PreviewStatusActivity;
 import id.dpapayas.photoshoots.R;
+import id.dpapayas.photoshoots.camera.ICallback;
 import id.dpapayas.photoshoots.camera.MaterialCamera;
 import id.dpapayas.photoshoots.camera.TimeLimitReachedException;
 import id.dpapayas.photoshoots.util.CameraUtil;
+import id.dpapayas.photoshoots.util.FilePaths;
+import id.dpapayas.photoshoots.util.ImageManager;
+import id.dpapayas.photoshoots.util.RotateBitmap;
+import id.dpapayas.photoshoots.videocompressor.FileUtils;
+import id.dpapayas.photoshoots.videocompressor.MediaController;
 
-public abstract class BaseCaptureActivity extends AppCompatActivity implements BaseCaptureInterface {
+public abstract class BaseCaptureActivity extends AppCompatActivity
+        implements BaseCaptureInterface {
+
+    private static final String TAG = "BaseCaptureActivity";
+    private static final int RESULT_ADD_NEW_STORY = 7891;
+    private static final int PROGRESS_BAR_ID = 5544;
 
     private int mCameraPosition = CAMERA_POSITION_UNKNOWN;
     private int mFlashMode = FLASH_MODE_OFF;
@@ -50,15 +75,12 @@ public abstract class BaseCaptureActivity extends AppCompatActivity implements B
     private Object mBackCameraId;
     private boolean mDidRecord = false;
     private List<Integer> mFlashModes;
-    private boolean canShowGuide;
-
-    public boolean isCanShowGuide() {
-        return canShowGuide;
-    }
-
-    public void setCanShowGuide(boolean canShowGuide) {
-        this.canShowGuide = canShowGuide;
-    }
+    private ProgressBar mProgressBar;
+    private AlertDialog mAlertDialog;
+    private String mUri = null;
+    private String mUploadUri = null;
+    private File tempFile;
+    private Boolean mDeleteCompressedMedia = false;
 
     public static final int PERMISSION_RC = 69;
 
@@ -79,8 +101,6 @@ public abstract class BaseCaptureActivity extends AppCompatActivity implements B
     public static final int FLASH_MODE_OFF = 0;
     public static final int FLASH_MODE_ALWAYS_ON = 1;
     public static final int FLASH_MODE_AUTO = 2;
-    public Fragment cameraFragment;
-    public Fragment previewFragment;
 
     @Override
     protected final void onSaveInstanceState(Bundle outState) {
@@ -109,15 +129,17 @@ public abstract class BaseCaptureActivity extends AppCompatActivity implements B
 
         if (!CameraUtil.hasCamera(this)) {
             new MaterialDialog.Builder(this)
-                    .title("Test")
-                    .content("Test Content")
+                    .title(R.string.mcam_error)
+                    .content(R.string.mcam_video_capture_unsupported)
                     .positiveText(android.R.string.ok)
-                    .dismissListener(new DialogInterface.OnDismissListener() {
-                        @Override
-                        public void onDismiss(DialogInterface dialog) {
-                            finish();
-                        }
-                    }).show();
+                    .dismissListener(
+                            new DialogInterface.OnDismissListener() {
+                                @Override
+                                public void onDismiss(DialogInterface dialog) {
+                                    finish();
+                                }
+                            })
+                    .show();
             return;
         }
         setContentView(R.layout.mcam_activity_videocapture);
@@ -127,7 +149,7 @@ public abstract class BaseCaptureActivity extends AppCompatActivity implements B
             final boolean isPrimaryDark = CameraUtil.isColorDark(primaryColor);
             final Window window = getWindow();
             window.setStatusBarColor(CameraUtil.darkenColor(primaryColor));
-            window.setNavigationBarColor(isPrimaryDark ? primaryColor : Color.BLACK);
+            window.setNavigationBarColor(isPrimaryDark ? primaryColor : Color.BLUE);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 final View view = window.getDecorView();
                 int flags = view.getSystemUiVisibility();
@@ -155,8 +177,10 @@ public abstract class BaseCaptureActivity extends AppCompatActivity implements B
             mFlashMode = savedInstanceState.getInt("flash_mode");
         }
 
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON |
-                WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        getWindow()
+                .addFlags(
+                        WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+                                | WindowManager.LayoutParams.FLAG_FULLSCREEN);
     }
 
     private void checkPermissions() {
@@ -164,8 +188,13 @@ public abstract class BaseCaptureActivity extends AppCompatActivity implements B
             showInitialRecorder();
             return;
         }
-        final boolean cameraGranted = ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED;
-        final boolean audioGranted = ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED;
+        final boolean cameraGranted =
+                ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+                        == PackageManager.PERMISSION_GRANTED;
+        final boolean audioGranted =
+                ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+                        == PackageManager.PERMISSION_GRANTED;
+
         final boolean audioNeeded = !useStillshot() && !audioDisabled();
 
         String[] perms = null;
@@ -191,51 +220,26 @@ public abstract class BaseCaptureActivity extends AppCompatActivity implements B
 
     @Override
     protected final void onPause() {
+        Log.d(TAG, "onPause: called.");
         super.onPause();
-        if (!isFinishing() && !isChangingConfigurations() && !mRequestingPermission)
-            finish();
+        if (!isFinishing() && !isChangingConfigurations() && !mRequestingPermission) finish();
     }
 
-    @SuppressLint("ResourceAsColor")
     @Override
     public final void onBackPressed() {
-        final Fragment frag = getFragmentManager().findFragmentById(R.id.container);
+        Fragment frag = getFragmentManager().findFragmentById(R.id.container);
         if (frag != null) {
-            if (frag instanceof PreviewFragment && allowRetry()) {
-                new MaterialDialog.Builder(this)
-                        .title("Test")
-                        .content("Test Content？")
-                        .positiveText("Yes")
-                        .negativeText("No")
-                        .positiveColor(R.color.blue_primary)
-                        .negativeColor(R.color.red)
-                        .onPositive(new MaterialDialog.SingleButtonCallback() {
-                            @Override
-                            public void onClick(@NonNull MaterialDialog materialDialog, @NonNull DialogAction dialogAction) {
-                                onRetry(((CameraUriInterface) frag).getOutputUri());
-                            }
-                        })
-                        .show();
+            if (frag instanceof PlaybackVideoFragment && allowRetry()) {
+                onRetry(((CameraUriInterface) frag).getOutputUri());
                 return;
             } else if (frag instanceof BaseCameraFragment) {
-                new MaterialDialog.Builder(this)
-                        .title("Test")
-                        .content("Test Content?")
-                        .positiveText("Yes")
-                        .negativeText("No")
-                        .positiveColor(R.color.blue_primary)
-                        .negativeColor(R.color.red)
-                        .onPositive(new MaterialDialog.SingleButtonCallback() {
-                            @Override
-                            public void onClick(@NonNull MaterialDialog materialDialog, @NonNull DialogAction dialogAction) {
-                                ((BaseCameraFragment) frag).cleanup();
-                                finish();
-                            }
-                        })
-                        .show();
+                ((BaseCameraFragment) frag).cleanup();
+            } else if (frag instanceof BaseGalleryFragment && allowRetry()) {
+                onRetry(((CameraUriInterface) frag).getOutputUri());
                 return;
             }
         }
+//    deleteTempFile();
         finish();
     }
 
@@ -251,8 +255,7 @@ public abstract class BaseCaptureActivity extends AppCompatActivity implements B
     @Override
     public void setRecordingStart(long start) {
         mRecordingStart = start;
-        if (start > -1 && hasLengthLimit())
-            setRecordingEnd(mRecordingStart + getLengthLimit());
+        if (start > -1 && hasLengthLimit()) setRecordingEnd(mRecordingStart + getLengthLimit());
         else setRecordingEnd(-1);
     }
 
@@ -295,12 +298,10 @@ public abstract class BaseCaptureActivity extends AppCompatActivity implements B
     public void toggleCameraPosition() {
         if (getCurrentCameraPosition() == CAMERA_POSITION_FRONT) {
             // Front, go to back if possible
-            if (getBackCamera() != null)
-                setCameraPosition(CAMERA_POSITION_BACK);
+            if (getBackCamera() != null) setCameraPosition(CAMERA_POSITION_BACK);
         } else {
             // Back, go to front if possible
-            if (getFrontCamera() != null)
-                setCameraPosition(CAMERA_POSITION_FRONT);
+            if (getFrontCamera() != null) setCameraPosition(CAMERA_POSITION_FRONT);
         }
     }
 
@@ -311,8 +312,7 @@ public abstract class BaseCaptureActivity extends AppCompatActivity implements B
 
     @Override
     public Object getCurrentCameraId() {
-        if (getCurrentCameraPosition() == CAMERA_POSITION_FRONT)
-            return getFrontCamera();
+        if (getCurrentCameraPosition() == CAMERA_POSITION_FRONT) return getFrontCamera();
         else return getBackCamera();
     }
 
@@ -337,34 +337,31 @@ public abstract class BaseCaptureActivity extends AppCompatActivity implements B
     }
 
     private void showInitialRecorder() {
-        getFragmentManager().beginTransaction()
-                .replace(R.id.container, createFragment())
-                .commit();
+        getFragmentManager().beginTransaction().replace(R.id.container, createFragment()).commit();
     }
 
     @Override
     public final void onRetry(@Nullable String outputUri) {
-        if (outputUri != null)
-            deleteOutputFile(outputUri);
-        if (!shouldAutoSubmit() || restartTimerOnRetry())
-            setRecordingStart(-1);
+        if (outputUri != null) deleteOutputFile(outputUri);
+        if (!shouldAutoSubmit() || restartTimerOnRetry()) setRecordingStart(-1);
         if (getIntent().getBooleanExtra(CameraIntentKey.RETRY_EXITS, false)) {
-            setResult(RESULT_OK, new Intent()
-                    .putExtra(MaterialCamera.STATUS_EXTRA, MaterialCamera.STATUS_RETRY));
+            setResult(
+                    RESULT_OK,
+                    new Intent().putExtra(MaterialCamera.STATUS_EXTRA, MaterialCamera.STATUS_RETRY));
             finish();
             return;
         }
-        getFragmentManager().beginTransaction()
-                .replace(R.id.container, createFragment())
-                .commit();
+        getFragmentManager().beginTransaction().replace(R.id.container, createFragment()).commit();
     }
 
     @Override
-    public final void onShowPreview(Fragment fragment, @Nullable final String outputUri, boolean countdownIsAtZero) {
-        if ((shouldAutoSubmit() && (countdownIsAtZero || !allowRetry() || !hasLengthLimit())) || outputUri == null) {
+    public final void onShowPreview(@Nullable final String outputUri, boolean countdownIsAtZero) {
+        if ((shouldAutoSubmit() && (countdownIsAtZero || !allowRetry() || !hasLengthLimit()))
+                || outputUri == null) {
             if (outputUri == null) {
-                setResult(RESULT_CANCELED, new Intent().putExtra(MaterialCamera.ERROR_EXTRA,
-                        new TimeLimitReachedException()));
+                setResult(
+                        RESULT_CANCELED,
+                        new Intent().putExtra(MaterialCamera.ERROR_EXTRA, new TimeLimitReachedException()));
                 finish();
                 return;
             }
@@ -374,13 +371,10 @@ public abstract class BaseCaptureActivity extends AppCompatActivity implements B
                 // No countdown or countdown should not continue through playback, reset timer to 0
                 setRecordingStart(-1);
             }
-            Fragment frag = PreviewFragment.newInstance(outputUri, allowRetry(),
-                    getIntent().getIntExtra(CameraIntentKey.PRIMARY_COLOR, 0));
-            getFragmentManager().beginTransaction()
-                    .replace(R.id.container, frag)
-                    .commit();
-            cameraFragment = fragment;
-            previewFragment = frag;
+            Fragment frag =
+                    PlaybackVideoFragment.newInstance(
+                            outputUri, allowRetry(), getIntent().getIntExtra(CameraIntentKey.PRIMARY_COLOR, 0));
+            getFragmentManager().beginTransaction().replace(R.id.container, frag).commit();
         }
     }
 
@@ -389,11 +383,10 @@ public abstract class BaseCaptureActivity extends AppCompatActivity implements B
         if (shouldAutoSubmit()) {
             useMedia(outputUri);
         } else {
-            Fragment frag = PreviewFragment.newInstance(outputUri, allowRetry(),
-                    getIntent().getIntExtra(CameraIntentKey.PRIMARY_COLOR, 0));
-            getFragmentManager().beginTransaction()
-                    .replace(R.id.container, frag)
-                    .commit();
+            Fragment frag =
+                    StillshotPreviewFragment.newInstance(
+                            outputUri, allowRetry(), getIntent().getIntExtra(CameraIntentKey.PRIMARY_COLOR, 0));
+            getFragmentManager().beginTransaction().replace(R.id.container, frag).commit();
         }
     }
 
@@ -409,6 +402,7 @@ public abstract class BaseCaptureActivity extends AppCompatActivity implements B
 
     private void deleteOutputFile(@Nullable String uri) {
         if (uri != null)
+            //noinspection ResultOfMethodCallIgnored
             new File(Uri.parse(uri).getPath()).delete();
     }
 
@@ -419,7 +413,8 @@ public abstract class BaseCaptureActivity extends AppCompatActivity implements B
     }
 
     @Override
-    public final void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+    public final void onRequestPermissionsResult(
+            int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         mRequestingPermission = false;
         if (grantResults[0] == PackageManager.PERMISSION_DENIED) {
@@ -427,25 +422,333 @@ public abstract class BaseCaptureActivity extends AppCompatActivity implements B
                     .title(R.string.mcam_permissions_needed)
                     .content(R.string.mcam_video_perm_warning)
                     .positiveText(android.R.string.ok)
-                    .dismissListener(new DialogInterface.OnDismissListener() {
-                        @Override
-                        public void onDismiss(DialogInterface dialog) {
-                            finish();
-                        }
-                    }).show();
+                    .dismissListener(
+                            new DialogInterface.OnDismissListener() {
+                                @Override
+                                public void onDismiss(DialogInterface dialog) {
+                                    finish();
+                                }
+                            })
+                    .show();
         } else {
             showInitialRecorder();
         }
     }
 
     @Override
+    protected void onDestroy() {
+        super.onDestroy();
+//    deleteTempFile();
+    }
+
+    @Override
     public final void useMedia(String uri) {
         if (uri != null) {
-            setResult(Activity.RESULT_OK, getIntent()
-                    .putExtra(MaterialCamera.STATUS_EXTRA, MaterialCamera.STATUS_RECORDED)
-                    .setDataAndType(Uri.parse(uri), useStillshot() ? "image/jpeg" : "video/mp4"));
+            Log.d(TAG, "useMedia: upload uri: " + uri);
+            mUri = uri;
+//      setResult(
+//          Activity.RESULT_OK,
+//          getIntent()
+//              .putExtra(MaterialCamera.STATUS_EXTRA, MaterialCamera.STATUS_RECORDED)
+//              .setDataAndType(Uri.parse(uri), useStillshot() ? "image/jpeg" : "video/mp4"));
+            saveMediaToMemory(uri);
         }
+//    finish();
+    }
+
+
+    @Override
+    public void addToStory(String uri) {
+        Log.d(TAG, "addToStory: adding file to story.");
+        initProgressBar();
+        if (isMediaVideo(uri)) {
+            if (mUploadUri == null) {
+                Log.d(TAG, "addToStory: Video was not saved. Beginning compression.");
+                mDeleteCompressedMedia = true;
+                saveTempAndCompress(uri);
+            } else {
+                Log.d(TAG, "addToStory: video has been saved. Now uploading.");
+                Log.d(TAG, "addToStory: upload uri: " + mUploadUri);
+                finishActivityAndUpload();
+            }
+        } else {
+            if (mUploadUri == null) {
+                Log.d(TAG, "addToStory: Image was not saved. Now uploading");
+                mDeleteCompressedMedia = true;
+                mUploadUri = uri;
+                finishActivityAndUpload();
+            } else {
+                Log.d(TAG, "addToStory: Image has been saved. Now uploading.");
+                Log.d(TAG, "addToStory: upload uri: " + mUploadUri);
+                finishActivityAndUpload();
+            }
+        }
+
+    }
+
+    private void finishActivityAndUpload() {
+        Log.d(TAG, "finishActivityAndUpload: called.");
+        if (mDeleteCompressedMedia) {
+            setResult(
+                    RESULT_ADD_NEW_STORY,
+                    getIntent()
+                            .putExtra(MaterialCamera.DELETE_UPLOAD_FILE_EXTRA, true)
+                            .putExtra(MaterialCamera.STATUS_EXTRA, MaterialCamera.STATUS_RECORDED)
+                            .setDataAndType(Uri.parse(mUploadUri), useStillshot() ? "image/jpeg" : "video/mp4"));
+        } else {
+            setResult(
+                    RESULT_ADD_NEW_STORY,
+                    getIntent()
+                            .putExtra(MaterialCamera.DELETE_UPLOAD_FILE_EXTRA, false)
+                            .putExtra(MaterialCamera.STATUS_EXTRA, MaterialCamera.STATUS_RECORDED)
+                            .setDataAndType(Uri.parse(mUploadUri), useStillshot() ? "image/jpeg" : "video/mp4"));
+        }
+
         finish();
+    }
+
+    private void initProgressBar() {
+//    RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(
+//            RelativeLayout.LayoutParams.MATCH_PARENT,
+//            RelativeLayout.LayoutParams.MATCH_PARENT
+//    );
+//    RelativeLayout relativeLayout = new RelativeLayout(this);
+//    relativeLayout.bringToFront();
+//    relativeLayout.setLayoutParams(layoutParams);
+////
+//    FrameLayout frameLayout = ((Activity)this).findViewById(R.id.container);
+//    frameLayout.addView(relativeLayout);
+//
+//    RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(
+//            250,
+//            RelativeLayout.LayoutParams.WRAP_CONTENT
+//    );
+//    params.addRule(RelativeLayout.CENTER_IN_PARENT);
+//    mProgressBar = new ProgressBar(this);
+//    mProgressBar.setId(PROGRESS_BAR_ID);
+//    mProgressBar.setLayoutParams(params);
+//    mProgressBar.setVisibility(View.VISIBLE);
+//    mProgressBar.bringToFront();
+//    relativeLayout.addView(mProgressBar);
+//    Drawable progressDrawable = mProgressBar.getIndeterminateDrawable().mutate();
+//    progressDrawable.setColorFilter(Color.WHITE, android.graphics.PorterDuff.Mode.SRC_IN);
+//    mProgressBar.setProgressDrawable(progressDrawable);
+
+        // retrieve display dimensions
+//    Rect displayRectangle = new Rect();
+//    Window window = this.getWindow();
+//    window.getDecorView().getWindowVisibleDisplayFrame(displayRectangle);
+
+        LayoutInflater li = LayoutInflater.from(this);
+        View layout = li.inflate(R.layout.layout_processing_dialog, null);
+        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
+                150,
+                FrameLayout.LayoutParams.WRAP_CONTENT
+        );
+        layout.setLayoutParams(params);
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
+        alertDialogBuilder.setView(layout);
+        mAlertDialog = alertDialogBuilder.create();
+        mAlertDialog.setCancelable(false);
+        mAlertDialog.show();
+    }
+
+    private void saveTempAndCompress(String uri) {
+        new SaveVideo(uri).execute();
+    }
+
+    class SaveVideo extends AsyncTask<Void, Void, Void> {
+
+        String uri;
+
+        public SaveVideo(String uri) {
+            this.uri = uri;
+        }
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+            String fileName = uri.substring(uri.indexOf("Stories/") + 8);
+            tempFile = FileUtils.saveTempFile(fileName, BaseCaptureActivity.this, Uri.parse(uri));
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void filePath) {
+            hideProgressBar();
+            Intent intent = new Intent(BaseCaptureActivity.this, PreviewStatusActivity.class);
+            intent.putExtra("filepath", tempFile);
+            startActivity(intent);
+        }
+    }
+
+    private void saveMediaToMemory(String uri) {
+        Log.d(TAG, "saveMediaToMemory: saving media to memory.");
+        Log.d(TAG, "saveMediaToMemory: uri: " + uri);
+
+        initProgressBar();
+
+        if (isMediaVideo(uri)) {
+
+            saveTempAndCompress(uri);
+        } else {
+            Bitmap bm = null;
+            RotateBitmap rotateBitmap = new RotateBitmap();
+            try {
+                bm = rotateBitmap.HandleSamplingAndRotationBitmap(this, Uri.parse(uri));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            //delete the old file
+            deleteOutputFile(uri);
+
+            saveBitmapToDisk(bm);
+        }
+
+    }
+
+    class VideoCompressor extends AsyncTask<Void, Void, String> {
+//    class VideoCompressor extends AsyncTask<Void, Void, Boolean> {
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            showProgressBar();
+            Log.d(TAG, "Start video compression");
+        }
+
+        @Override
+        protected String doInBackground(Void... voids) {
+//  protected boolean doInBackground(Void... voids) {
+
+            return MediaController.getInstance().convertVideo(tempFile.getPath());
+        }
+
+        @Override
+        protected void onPostExecute(String filePath) {
+//      protected void onPostExecute(Boolean compressed) {
+            super.onPostExecute(filePath);
+//      super.onPostExecute(compressed);
+            hideProgressBar();
+            if (!filePath.equals("")) {
+//        if(compressed){
+                mUploadUri = filePath;
+                Log.d(TAG, "Compression successfully!");
+                if (mDeleteCompressedMedia) {
+                    finishActivityAndUpload();
+                }
+            }
+        }
+    }
+
+    private void deleteTempFile() {
+        if (tempFile != null && tempFile.exists()) {
+            tempFile.delete();
+        }
+    }
+
+
+    private void saveBitmapToDisk(final Bitmap bm) {
+        final ICallback callback = new ICallback() {
+            @Override
+            public void done(Exception e) {
+                if (e == null) {
+                    hideProgressBar();
+                    Log.d(TAG, "saveBitmapToDisk: saved file to disk.");
+                    Toast.makeText(BaseCaptureActivity.this, "saved", Toast.LENGTH_SHORT).show();
+                } else {
+                    e.printStackTrace();
+                    hideProgressBar();
+                    Toast.makeText(BaseCaptureActivity.this, "something went wrong", Toast.LENGTH_SHORT).show();
+                }
+            }
+        };
+        Log.d(TAG, "saveBitmapToDisk: saving to disc.");
+        final Handler handler = new Handler();
+        new Thread() {
+            @Override
+            public void run() {
+                try {
+                    FileOutputStream out = null;
+                    FileInputStream fis = null;
+                    try {
+                        FilePaths filePaths = new FilePaths();
+                        String timeStamp =
+                                new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+//            String path = Environment.getExternalStorageDirectory().toString();
+                        File file = new File(filePaths.STORIES + "/IMG_" + timeStamp + ".jpg");
+                        out = new FileOutputStream(file);
+                        bm.compress(Bitmap.CompressFormat.JPEG, ImageManager.IMAGE_SAVE_QUALITY, out);
+
+                        File imagefile = new File(file.getPath());
+                        try {
+                            fis = new FileInputStream(imagefile);
+                        } catch (FileNotFoundException e) {
+                            e.printStackTrace();
+                        }
+                        mUploadUri = file.getPath();
+
+                        Log.d(TAG, "saveBitmapToDisk: new uri: " + mUploadUri);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    } finally {
+                        try {
+                            if (out != null) {
+                                out.close();
+                            }
+                            if (fis != null) {
+                                fis.close();
+                            }
+
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    handler.post(
+                            new Runnable() {
+                                @Override
+                                public void run() {
+                                    callback.done(null);
+                                }
+                            });
+                } catch (final Exception e) {
+                    handler.post(
+                            new Runnable() {
+                                @Override
+                                public void run() {
+                                    callback.done(e);
+                                }
+                            });
+                }
+            }
+        }.start();
+
+    }
+
+    private boolean isMediaVideo(String uri) {
+        if (uri.contains(".mp4") || uri.contains(".wmv") || uri.contains(".flv") || uri.contains(".avi")) {
+            return true;
+        }
+        return false;
+    }
+
+    private void showProgressBar() {
+//    if(mProgressBar != null){
+//      mProgressBar.setVisibility(View.VISIBLE);
+//    }
+        if (mAlertDialog != null) {
+            mAlertDialog.show();
+        }
+    }
+
+    private void hideProgressBar() {
+//    if(mProgressBar != null){
+//      mProgressBar.setVisibility(View.INVISIBLE);
+//    }
+        if (mAlertDialog != null) {
+            mAlertDialog.dismiss();
+        }
     }
 
     @Override
@@ -464,9 +767,28 @@ public abstract class BaseCaptureActivity extends AppCompatActivity implements B
     }
 
     @Override
+    public int getFlashModeVideo() {
+        return mFlashMode;
+    }
+
+    @Override
     public void toggleFlashMode() {
         if (mFlashModes != null) {
             mFlashMode = mFlashModes.get((mFlashModes.indexOf(mFlashMode) + 1) % mFlashModes.size());
+        }
+    }
+
+
+    @Override
+    public void toggleFlashModeVideo() {
+        Log.d(TAG, "toggleFlashModeVideo: toggling video flash mode.");
+        if (mFlashModes != null) {
+            Log.d(TAG, "toggleFlashModeVideo: flash mode is not null");
+            if (mFlashMode == FLASH_MODE_ALWAYS_ON) {
+                mFlashMode = FLASH_MODE_OFF;
+            } else {
+                mFlashMode = FLASH_MODE_ALWAYS_ON;
+            }
         }
     }
 
@@ -483,11 +805,6 @@ public abstract class BaseCaptureActivity extends AppCompatActivity implements B
     @Override
     public int videoEncodingBitRate(int defaultVal) {
         return getIntent().getIntExtra(CameraIntentKey.VIDEO_BIT_RATE, defaultVal);
-    }
-
-    @Override
-    public boolean showGuide() {
-        return getIntent().getBooleanExtra("showGuide", false);
     }
 
     @Override
@@ -523,25 +840,25 @@ public abstract class BaseCaptureActivity extends AppCompatActivity implements B
     @DrawableRes
     @Override
     public int iconPause() {
-        return getIntent().getIntExtra(CameraIntentKey.ICON_PAUSE, R.drawable.ic_launcher_background);
+        return getIntent().getIntExtra(CameraIntentKey.ICON_PAUSE, R.drawable.evp_action_pause);
     }
 
     @DrawableRes
     @Override
     public int iconPlay() {
-        return getIntent().getIntExtra(CameraIntentKey.ICON_PLAY, R.drawable.ic_launcher_background);
+        return getIntent().getIntExtra(CameraIntentKey.ICON_PLAY, R.drawable.evp_action_play);
     }
 
     @DrawableRes
     @Override
     public int iconRestart() {
-        return getIntent().getIntExtra(CameraIntentKey.ICON_RESTART, R.drawable.ic_launcher_background);
+        return getIntent().getIntExtra(CameraIntentKey.ICON_RESTART, R.drawable.evp_action_restart);
     }
 
     @DrawableRes
     @Override
     public int iconRearCamera() {
-        return getIntent().getIntExtra(CameraIntentKey.ICON_REAR_CAMERA, R.drawable.ic_launcher_background);
+        return getIntent().getIntExtra(CameraIntentKey.ICON_REAR_CAMERA, R.drawable.mcam_camera_rear);
     }
 
     @DrawableRes
@@ -578,14 +895,23 @@ public abstract class BaseCaptureActivity extends AppCompatActivity implements B
     @StringRes
     @Override
     public int labelConfirm() {
-        return getIntent().getIntExtra(CameraIntentKey.LABEL_CONFIRM, useStillshot() ? R.string.mcam_use_stillshot : R.string.mcam_use_video);
+        return getIntent()
+                .getIntExtra(
+                        CameraIntentKey.LABEL_CONFIRM,
+                        useStillshot() ? R.string.mcam_use_stillshot : R.string.mcam_use_video);
     }
 
     @DrawableRes
     @Override
     public int iconStillshot() {
-        return getIntent().getIntExtra(CameraIntentKey.ICON_STILL_SHOT, R.drawable.mcam_action_stillshot);
+        return getIntent()
+                .getIntExtra(CameraIntentKey.ICON_STILL_SHOT, R.drawable.mcam_action_stillshot);
     }
+
+//  @Override
+//  public void setUseStillshot(boolean bool) {
+//    getIntent().putExtra(CameraIntentKey.STILL_SHOT, bool);
+//  }
 
     @Override
     public boolean useStillshot() {
@@ -595,7 +921,8 @@ public abstract class BaseCaptureActivity extends AppCompatActivity implements B
     @DrawableRes
     @Override
     public int iconFlashAuto() {
-        return getIntent().getIntExtra(CameraIntentKey.ICON_FLASH_AUTO, R.drawable.mcam_action_flash_auto);
+        return getIntent()
+                .getIntExtra(CameraIntentKey.ICON_FLASH_AUTO, R.drawable.mcam_action_flash_auto);
     }
 
     @DrawableRes
@@ -607,7 +934,8 @@ public abstract class BaseCaptureActivity extends AppCompatActivity implements B
     @DrawableRes
     @Override
     public int iconFlashOff() {
-        return getIntent().getIntExtra(CameraIntentKey.ICON_FLASH_OFF, R.drawable.mcam_action_flash_off);
+        return getIntent()
+                .getIntExtra(CameraIntentKey.ICON_FLASH_OFF, R.drawable.mcam_action_flash_off);
     }
 
     @Override

@@ -4,7 +4,6 @@ import android.Manifest;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.pm.PackageManager;
-import android.content.res.Configuration;
 import android.graphics.Point;
 import android.hardware.Camera;
 import android.media.CamcorderProfile;
@@ -14,12 +13,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
-import android.view.Gravity;
-import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
-import android.widget.LinearLayout;
-import android.widget.PopupWindow;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
@@ -30,24 +24,20 @@ import java.util.Comparator;
 import java.util.List;
 
 import id.dpapayas.photoshoots.R;
-import id.dpapayas.photoshoots.camera.CaptureActivity;
 import id.dpapayas.photoshoots.camera.ICallback;
 import id.dpapayas.photoshoots.util.CameraUtil;
 import id.dpapayas.photoshoots.util.Degrees;
 import id.dpapayas.photoshoots.util.ImageUtil;
 import id.dpapayas.photoshoots.util.ManufacturerUtil;
 
-
-/**
- * @author Aidan Follestad (afollestad)
- */
 @SuppressWarnings("deprecation")
 @TargetApi(Build.VERSION_CODES.JELLY_BEAN)
 public class CameraFragment extends BaseCameraFragment implements View.OnClickListener {
 
+    private static final String TAG = "CameraFragment";
+
     CameraPreview mPreviewView;
     RelativeLayout mPreviewFrame;
-    private AutoFitTextureView autoFitTextureView;
 
     private Camera.Size mVideoSize;
     private Camera mCamera;
@@ -55,9 +45,6 @@ public class CameraFragment extends BaseCameraFragment implements View.OnClickLi
     private int mDisplayOrientation;
     private boolean mIsAutoFocusing;
     List<Integer> mFlashModes;
-    private LinearLayout body;
-    private boolean mReachedZero;
-    private boolean canShowPreView=false;
 
     public static CameraFragment newInstance() {
         CameraFragment fragment = new CameraFragment();
@@ -69,10 +56,8 @@ public class CameraFragment extends BaseCameraFragment implements View.OnClickLi
         Camera.Size backupSize = null;
         for (Camera.Size size : choices) {
             if (size.height <= ci.videoPreferredHeight()) {
-                if (size.width == size.height * ci.videoPreferredAspect())
-                    return size;
-                if (ci.videoPreferredHeight() >= size.height)
-                    backupSize = size;
+                if (size.width == size.height * ci.videoPreferredAspect()) return size;
+                if (ci.videoPreferredHeight() >= size.height) backupSize = size;
             }
         }
         if (backupSize != null) return backupSize;
@@ -80,14 +65,14 @@ public class CameraFragment extends BaseCameraFragment implements View.OnClickLi
         return choices.get(choices.size() - 1);
     }
 
-    private static Camera.Size chooseOptimalSize(List<Camera.Size> choices, int width, int height, Camera.Size aspectRatio) {
+    private static Camera.Size chooseOptimalSize(
+            List<Camera.Size> choices, int width, int height, Camera.Size aspectRatio) {
         // Collect the supported resolutions that are at least as big as the preview Surface
         List<Camera.Size> bigEnough = new ArrayList<>();
         int w = aspectRatio.width;
         int h = aspectRatio.height;
         for (Camera.Size option : choices) {
-            if (option.height == width * h / w &&
-                    option.width >= width && option.height >= height) {
+            if (option.height == width * h / w && option.width >= width && option.height >= height) {
                 bigEnough.add(option);
             }
         }
@@ -105,9 +90,6 @@ public class CameraFragment extends BaseCameraFragment implements View.OnClickLi
     public void onViewCreated(final View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         mPreviewFrame = (RelativeLayout) view.findViewById(R.id.rootFrame);
-        body= (LinearLayout) view.findViewById(R.id.body);
-        autoFitTextureView= (AutoFitTextureView) view.findViewById(R.id.texture);
-        autoFitTextureView.setVisibility(View.GONE);
         mPreviewFrame.setOnClickListener(this);
     }
 
@@ -140,16 +122,15 @@ public class CameraFragment extends BaseCameraFragment implements View.OnClickLi
             try {
                 mIsAutoFocusing = true;
                 mCamera.cancelAutoFocus();
-                Camera.Parameters parameters=mCamera.getParameters();
-                List<String> list=parameters.getSupportedFocusModes();
-                mCamera.autoFocus(new Camera.AutoFocusCallback() {
-                    @Override
-                    public void onAutoFocus(boolean success, Camera camera) {
-                        mIsAutoFocusing = false;
-                        if (!success)
-                            Toast.makeText(getActivity(), "Unable to auto-focus!", Toast.LENGTH_SHORT).show();
-                    }
-                });
+                mCamera.autoFocus(
+                        new Camera.AutoFocusCallback() {
+                            @Override
+                            public void onAutoFocus(boolean success, Camera camera) {
+                                mIsAutoFocusing = false;
+                                if (!success)
+                                    Toast.makeText(getActivity(), "Unable to auto-focus!", Toast.LENGTH_SHORT).show();
+                            }
+                        });
             } catch (Throwable t) {
                 t.printStackTrace();
             }
@@ -163,8 +144,10 @@ public class CameraFragment extends BaseCameraFragment implements View.OnClickLi
         final Activity activity = getActivity();
         if (null == activity || activity.isFinishing()) return;
         try {
-            final int mBackCameraId = mInterface.getBackCamera() != null ? (Integer) mInterface.getBackCamera() : -1;
-            final int mFrontCameraId = mInterface.getFrontCamera() != null ? (Integer) mInterface.getFrontCamera() : -1;
+            final int mBackCameraId =
+                    mInterface.getBackCamera() != null ? (Integer) mInterface.getBackCamera() : -1;
+            final int mFrontCameraId =
+                    mInterface.getFrontCamera() != null ? (Integer) mInterface.getFrontCamera() : -1;
             if (mBackCameraId == -1 || mFrontCameraId == -1) {
                 int numberOfCameras = Camera.getNumberOfCameras();
                 if (numberOfCameras == 0) {
@@ -194,16 +177,18 @@ public class CameraFragment extends BaseCameraFragment implements View.OnClickLi
                     break;
                 case BaseCaptureActivity.CAMERA_POSITION_UNKNOWN:
                 default:
-                    if (!getArguments().getBoolean(CameraIntentKey.DEFAULT_TO_FRONT_FACING, false)) {
+                    if (getArguments().getBoolean(CameraIntentKey.DEFAULT_TO_FRONT_FACING, false)) {
                         // Check front facing first
-                        if (mInterface.getFrontCamera() != null && (Integer) mInterface.getFrontCamera() != -1) {
+                        if (mInterface.getFrontCamera() != null
+                                && (Integer) mInterface.getFrontCamera() != -1) {
                             setImageRes(mButtonFacing, mInterface.iconRearCamera());
                             mInterface.setCameraPosition(BaseCaptureActivity.CAMERA_POSITION_FRONT);
                         } else {
                             setImageRes(mButtonFacing, mInterface.iconFrontCamera());
                             if (mInterface.getBackCamera() != null && (Integer) mInterface.getBackCamera() != -1)
                                 mInterface.setCameraPosition(BaseCaptureActivity.CAMERA_POSITION_BACK);
-                            else mInterface.setCameraPosition(BaseCaptureActivity.CAMERA_POSITION_UNKNOWN);
+                            else
+                                mInterface.setCameraPosition(BaseCaptureActivity.CAMERA_POSITION_UNKNOWN);
                         }
                     } else {
                         // Check back facing first
@@ -212,16 +197,17 @@ public class CameraFragment extends BaseCameraFragment implements View.OnClickLi
                             mInterface.setCameraPosition(BaseCaptureActivity.CAMERA_POSITION_BACK);
                         } else {
                             setImageRes(mButtonFacing, mInterface.iconRearCamera());
-                            if (mInterface.getFrontCamera() != null && (Integer) mInterface.getFrontCamera() != -1)
+                            if (mInterface.getFrontCamera() != null
+                                    && (Integer) mInterface.getFrontCamera() != -1)
                                 mInterface.setCameraPosition(BaseCaptureActivity.CAMERA_POSITION_FRONT);
-                            else mInterface.setCameraPosition(BaseCaptureActivity.CAMERA_POSITION_UNKNOWN);
+                            else
+                                mInterface.setCameraPosition(BaseCaptureActivity.CAMERA_POSITION_UNKNOWN);
                         }
                     }
                     break;
             }
 
-            if (mWindowSize == null)
-                mWindowSize = new Point();
+            if (mWindowSize == null) mWindowSize = new Point();
             activity.getWindowManager().getDefaultDisplay().getSize(mWindowSize);
             final int toOpen = getCurrentCameraId();
             mCamera = Camera.open(toOpen == -1 ? 0 : toOpen);
@@ -230,33 +216,36 @@ public class CameraFragment extends BaseCameraFragment implements View.OnClickLi
             if (videoSizes == null || videoSizes.size() == 0)
                 videoSizes = parameters.getSupportedPreviewSizes();
             mVideoSize = chooseVideoSize((BaseCaptureActivity) activity, videoSizes);
-            Camera.Size previewSize = chooseOptimalSize(parameters.getSupportedPreviewSizes(),
-                    mWindowSize.x, mWindowSize.y, mVideoSize);
+            Camera.Size previewSize =
+                    chooseOptimalSize(
+                            parameters.getSupportedPreviewSizes(), mWindowSize.x, mWindowSize.y, mVideoSize);
 
             if (ManufacturerUtil.isSamsungGalaxyS3()) {
-                parameters.setPreviewSize(ManufacturerUtil.SAMSUNG_S3_PREVIEW_WIDTH,
-                        ManufacturerUtil.SAMSUNG_S3_PREVIEW_HEIGHT);
-//                parameters.setPreviewSize(ManufacturerUtil.SAMSUNG_S3_PREVIEW_HEIGHT,ManufacturerUtil.SAMSUNG_S3_PREVIEW_WIDTH);
-
+                parameters.setPreviewSize(
+                        ManufacturerUtil.SAMSUNG_S3_PREVIEW_WIDTH, ManufacturerUtil.SAMSUNG_S3_PREVIEW_HEIGHT);
             } else {
-//                parameters.setPreviewSize( previewSize.height,previewSize.width);
-//                parameters.setPreviewSize(previewSize.width, previewSize.height);
-                parameters.setPreviewSize(640, 480);
-                Log.e("lzf_parameters", "line234  " + previewSize.width + "  " + previewSize.height);
+                parameters.setPreviewSize(previewSize.width, previewSize.height);
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT)
                     parameters.setRecordingHint(true);
             }
-            List<Camera.Size> pictureSizes = parameters.getSupportedPictureSizes();
-            int length = pictureSizes.size();
-            for (int i = 0; i < length; i++) {
-                Log.e("TAG","SupportedPictureSizes : " + pictureSizes.get(i).width + "x" + pictureSizes.get(i).height);
-            }
-            Camera.Size mStillShotSize = getHighestSupportedStillShotSize(parameters.getSupportedPictureSizes());
-            Log.e("lzf_parameters", "line240  " + mStillShotSize.width + "    " + mStillShotSize.height);
-            Log.e("lzf_pictureSize",previewSize.width+" "+ previewSize.height);
-//            parameters.setPictureSize(previewSize.width, previewSize.height);
-            parameters.setPictureSize(640, 480);
-//            parameters.setPictureSize( mStillShotSize.height,mStillShotSize.width);
+
+            parameters.setPreviewSize(
+                    ManufacturerUtil.SAMSUNG_S3_PREVIEW_WIDTH, ManufacturerUtil.SAMSUNG_S3_PREVIEW_HEIGHT);
+
+            Camera.Size mStillShotSize =
+                    getHighestSupportedStillShotSize(parameters.getSupportedPictureSizes());
+            Log.d(TAG, "openCamera: highest supported stillshot size: " + parameters.getSupportedPictureSizes());
+
+            int width = mStillShotSize.width;
+            int height = mStillShotSize.height;
+            parameters.setPictureSize(width, height);
+
+//      int width = ManufacturerUtil.SAMSUNG_S3_PREVIEW_WIDTH;
+//      int height = ManufacturerUtil.SAMSUNG_S3_PREVIEW_HEIGHT;
+//      parameters.setPictureSize(width, height);
+//
+//      Log.d(TAG, "openCamera: width: " + width);
+//      Log.d(TAG, "openCamera: height: " + height);
 
             setCameraDisplayOrientation(parameters);
             mCamera.setParameters(parameters);
@@ -274,20 +263,21 @@ public class CameraFragment extends BaseCameraFragment implements View.OnClickLi
         } catch (IllegalStateException e) {
             throwError(new Exception("Cannot access the camera.", e));
         } catch (RuntimeException e2) {
-            throwError(new Exception("Cannot access the camera, you may need to restart your device.", e2));
+            throwError(
+                    new Exception("Cannot access the camera, you may need to restart your device.", e2));
         }
     }
 
     private Camera.Size getHighestSupportedStillShotSize(List<Camera.Size> supportedPictureSizes) {
-        Collections.sort(supportedPictureSizes, new Comparator<Camera.Size>() {
-            @Override
-            public int compare(Camera.Size lhs, Camera.Size rhs) {
-                if (lhs.height * lhs.width > rhs.height * rhs.width)
-                    return -1;
-                return 1;
-
-            }
-        });
+        Collections.sort(
+                supportedPictureSizes,
+                new Comparator<Camera.Size>() {
+                    @Override
+                    public int compare(Camera.Size lhs, Camera.Size rhs) {
+                        if (lhs.height * lhs.width > rhs.height * rhs.width) return -1;
+                        return 1;
+                    }
+                });
         Camera.Size maxSize = supportedPictureSizes.get(0);
         Log.d("CameraFragment", "Using resolution: " + maxSize.width + "x" + maxSize.height);
         return maxSize;
@@ -295,14 +285,19 @@ public class CameraFragment extends BaseCameraFragment implements View.OnClickLi
 
     @SuppressWarnings("WrongConstant")
     private void setCameraDisplayOrientation(Camera.Parameters parameters) {
-        Camera.CameraInfo info =
-                new Camera.CameraInfo();
+        Camera.CameraInfo info = new Camera.CameraInfo();
         Camera.getCameraInfo(getCurrentCameraId(), info);
         final int deviceOrientation = Degrees.getDisplayRotation(getActivity());
-        mDisplayOrientation = Degrees.getDisplayOrientation(
-                info.orientation, deviceOrientation, info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT);
-        Log.d("CameraFragment", String.format("Orientations: Sensor = %d˚, Device = %d˚, Display = %d˚",
-                info.orientation, deviceOrientation, mDisplayOrientation));
+        mDisplayOrientation =
+                Degrees.getDisplayOrientation(
+                        info.orientation,
+                        deviceOrientation,
+                        info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT);
+        Log.d(
+                TAG,
+                String.format(
+                        "Orientations: Sensor = %d˚, Device = %d˚, Display = %d˚",
+                        info.orientation, deviceOrientation, mDisplayOrientation));
 
         int previewOrientation;
         int jpegOrientation;
@@ -312,39 +307,27 @@ public class CameraFragment extends BaseCameraFragment implements View.OnClickLi
         } else {
             jpegOrientation = previewOrientation = mDisplayOrientation;
 
-            if (Degrees.isPortrait(deviceOrientation) && getCurrentCameraPosition() == BaseCaptureActivity.CAMERA_POSITION_FRONT)
+            if (Degrees.isPortrait(deviceOrientation)
+                    && getCurrentCameraPosition() == BaseCaptureActivity.CAMERA_POSITION_FRONT)
                 previewOrientation = Degrees.mirror(mDisplayOrientation);
         }
-//        previewOrientation=previewOrientation+90;
-//        parameters.setRotation(jpegOrientation);
-        mCamera.setDisplayOrientation(90);
-//        parameters.setRotation(90);
-//        parameters.setRotation(0);
-//        mCamera.setDisplayOrientation(90);
+
+        parameters.setRotation(jpegOrientation);
+        mCamera.setDisplayOrientation(previewOrientation);
     }
 
     private void createPreview() {
         Activity activity = getActivity();
         if (activity == null) return;
-        if (mWindowSize == null)
-            mWindowSize = new Point();
+        if (mWindowSize == null) mWindowSize = new Point();
         activity.getWindowManager().getDefaultDisplay().getSize(mWindowSize);
         mPreviewView = new CameraPreview(getActivity(), mCamera);
-//        if (mPreviewFrame.getChildCount() > 0 && mPreviewFrame.getChildAt(0) instanceof CameraPreview)
-//            mPreviewFrame.removeViewAt(0);
-//        mPreviewFrame.addView(mPreviewView, 0);
-        if (body.getChildCount() > 0 && body.getChildAt(0) instanceof CameraPreview)
-            body.removeViewAt(0);
-//        RelativeLayout.LayoutParams layoutParams= new RelativeLayout.LayoutParams(
-//                RelativeLayout.LayoutParams.WRAP_CONTENT,
-//                RelativeLayout.LayoutParams.WRAP_CONTENT);
-//        layoutParams.addRule(RelativeLayout.BELOW,R.id.top);
-//        layoutParams.addRule(RelativeLayout.ABOVE,R.id.controlsFrame);
-//        mPreviewView.setLayoutParams(layoutParams);
-        body.addView(mPreviewView, 0);
-        mPreviewView.setAspectRatio(480, 640);
-//        mPreviewView.setAspectRatio(240, 320);
-//        mPreviewView.setAspectRatio(mWindowSize.x, mWindowSize.y);
+        if (mPreviewFrame.getChildCount() > 0 && mPreviewFrame.getChildAt(0) instanceof CameraPreview)
+            mPreviewFrame.removeViewAt(0);
+        mPreviewFrame.addView(mPreviewView, 0);
+        Log.d(TAG, "createPreview: window size x: " + mWindowSize.x);
+        Log.d(TAG, "createPreview: window size y: " + mWindowSize.y);
+        mPreviewView.setAspectRatio(mWindowSize.x, mWindowSize.y);
     }
 
     @Override
@@ -365,9 +348,6 @@ public class CameraFragment extends BaseCameraFragment implements View.OnClickLi
 
     private boolean prepareMediaRecorder() {
         try {
-            if (mCamera==null){
-                openCamera();
-            }
             final Activity activity = getActivity();
             if (null == activity) return false;
             final BaseCaptureInterface captureInterface = (BaseCaptureInterface) activity;
@@ -381,7 +361,9 @@ public class CameraFragment extends BaseCameraFragment implements View.OnClickLi
             boolean canUseAudio = true;
             boolean audioEnabled = !mInterface.audioDisabled();
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
-                canUseAudio = ContextCompat.checkSelfPermission(activity, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED;
+                canUseAudio =
+                        ContextCompat.checkSelfPermission(activity, Manifest.permission.RECORD_AUDIO)
+                                == PackageManager.PERMISSION_GRANTED;
 
             if (canUseAudio && audioEnabled) {
                 mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.DEFAULT);
@@ -390,21 +372,17 @@ public class CameraFragment extends BaseCameraFragment implements View.OnClickLi
             }
             mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.DEFAULT);
 
-            final CamcorderProfile profile = CamcorderProfile.get(getCurrentCameraId(), mInterface.qualityProfile());
+            final CamcorderProfile profile =
+                    CamcorderProfile.get(getCurrentCameraId(), mInterface.qualityProfile());
             mMediaRecorder.setOutputFormat(profile.fileFormat);
-
-            Log.e("lzf_type", "CameraFragment");
-            mMediaRecorder.setVideoEncodingBitRate(1000000);
-            mMediaRecorder.setVideoFrameRate(30);
-            mMediaRecorder.setVideoSize(640, 480);
-//            mMediaRecorder.setVideoSize(320, 240);
-//            mMediaRecorder.setVideoSize(mVideoSize.width, mVideoSize.height);
-//            mMediaRecorder.setVideoFrameRate(mInterface.videoFrameRate(profile.videoFrameRate));
-//            mMediaRecorder.setVideoEncodingBitRate(mInterface.videoEncodingBitRate(profile.videoBitRate));
+            mMediaRecorder.setVideoFrameRate(mInterface.videoFrameRate(profile.videoFrameRate));
+            mMediaRecorder.setVideoSize(mVideoSize.width, mVideoSize.height);
+            mMediaRecorder.setVideoEncodingBitRate(mInterface.videoEncodingBitRate(profile.videoBitRate));
             mMediaRecorder.setVideoEncoder(profile.videoCodec);
 
             if (canUseAudio && audioEnabled) {
-                mMediaRecorder.setAudioEncodingBitRate(mInterface.audioEncodingBitRate(profile.audioBitRate));
+                mMediaRecorder.setAudioEncodingBitRate(
+                        mInterface.audioEncodingBitRate(profile.audioBitRate));
                 mMediaRecorder.setAudioChannels(profile.audioChannels);
                 mMediaRecorder.setAudioSamplingRate(profile.audioSampleRate);
                 mMediaRecorder.setAudioEncoder(profile.audioCodec);
@@ -416,35 +394,21 @@ public class CameraFragment extends BaseCameraFragment implements View.OnClickLi
 
             if (captureInterface.maxAllowedFileSize() > 0) {
                 mMediaRecorder.setMaxFileSize(captureInterface.maxAllowedFileSize());
-                mMediaRecorder.setOnInfoListener(new MediaRecorder.OnInfoListener() {
-                    @Override
-                    public void onInfo(MediaRecorder mediaRecorder, int what, int extra) {
-                        if (what == MediaRecorder.MEDIA_RECORDER_INFO_MAX_FILESIZE_REACHED) {
-                            Toast.makeText(getActivity(), R.string.mcam_file_size_limit_reached, Toast.LENGTH_SHORT).show();
-                            stopRecordingVideo(false);
-                        }
-                    }
-                });
+                mMediaRecorder.setOnInfoListener(
+                        new MediaRecorder.OnInfoListener() {
+                            @Override
+                            public void onInfo(MediaRecorder mediaRecorder, int what, int extra) {
+                                if (what == MediaRecorder.MEDIA_RECORDER_INFO_MAX_FILESIZE_REACHED) {
+                                    Toast.makeText(
+                                            getActivity(), R.string.mcam_file_size_limit_reached, Toast.LENGTH_SHORT)
+                                            .show();
+                                    stopRecordingVideo(false);
+                                }
+                            }
+                        });
             }
-            //横屏
-            //前摄像头拍摄  视频对称
-            //后摄像头拍摄 正常
-            int orient = getActivity().getRequestedOrientation();
-            int orientation=getActivity().getResources().getConfiguration().orientation;
-            Log.e("lzf_orient", orient + " 当前屏幕方向 "+orientation);
-            //固定屏幕方向
-            if (getActivity().getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                mMediaRecorder.setOrientationHint(0);
-            } else if (getActivity().getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
-                //只走竖屏
-                if (mInterface.getCurrentCameraPosition() == BaseCaptureActivity.CAMERA_POSITION_BACK) {
-                    mMediaRecorder.setOrientationHint(90);
-                } else {
-                    mMediaRecorder.setOrientationHint(270);//竖屏 //前摄像头拍摄  视频对称
-                }
-            }
-//            mMediaRecorder.setOrientationHint(90);//竖屏 //后摄像头拍摄  正常
-//            mMediaRecorder.setOrientationHint(270);//竖屏 //前摄像头拍摄  视频对称
+
+            mMediaRecorder.setOrientationHint(mDisplayOrientation);
             mMediaRecorder.setPreviewDisplay(mPreviewView.getHolder().getSurface());
 
             try {
@@ -456,9 +420,7 @@ public class CameraFragment extends BaseCameraFragment implements View.OnClickLi
             }
         } catch (Throwable t) {
             try {
-                if (mCamera!=null) {
-                    mCamera.lock();
-                }
+                mCamera.lock();
             } catch (IllegalStateException e) {
                 throwError(new Exception("Failed to re-lock camera: " + e.getMessage(), e));
                 return false;
@@ -472,13 +434,15 @@ public class CameraFragment extends BaseCameraFragment implements View.OnClickLi
     @Override
     public boolean startRecordingVideo() {
         super.startRecordingVideo();
-        CaptureActivity activity= (CaptureActivity) getActivity();
         if (prepareMediaRecorder()) {
             try {
                 // UI
                 setImageRes(mButtonVideo, mInterface.iconStop());
-                if (!CameraUtil.isChromium())
+//        setupFlashMode();
+                if (!CameraUtil.isChromium()) {
                     mButtonFacing.setVisibility(View.GONE);
+                    mButtonFlash.setVisibility(View.GONE);
+                }
 
                 // Only start counter if count down wasn't already started
                 if (!mInterface.hasLengthLimit()) {
@@ -486,16 +450,19 @@ public class CameraFragment extends BaseCameraFragment implements View.OnClickLi
                     startCounter();
                 }
 
+
                 // Start recording
                 mMediaRecorder.start();
 
                 mButtonVideo.setEnabled(false);
-                mButtonVideo.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        mButtonVideo.setEnabled(true);
-                    }
-                }, 200);
+                mButtonVideo.postDelayed(
+                        new Runnable() {
+                            @Override
+                            public void run() {
+                                mButtonVideo.setEnabled(true);
+                            }
+                        },
+                        200);
 
                 return true;
             } catch (Throwable t) {
@@ -511,8 +478,10 @@ public class CameraFragment extends BaseCameraFragment implements View.OnClickLi
     @Override
     public void stopRecordingVideo(final boolean reachedZero) {
         super.stopRecordingVideo(reachedZero);
-        if (mInterface.hasLengthLimit() && mInterface.shouldAutoSubmit() &&
-                (mInterface.getRecordingStart() < 0 || mMediaRecorder == null)) {
+
+        if (mInterface.hasLengthLimit()
+                && mInterface.shouldAutoSubmit()
+                && (mInterface.getRecordingStart() < 0 || mMediaRecorder == null)) {
             stopCounter();
             if (mCamera != null) {
                 try {
@@ -523,50 +492,73 @@ public class CameraFragment extends BaseCameraFragment implements View.OnClickLi
             }
             releaseRecorder();
             closeCamera();
-            mReachedZero=reachedZero;
+            mButtonFacing.postDelayed(
+                    new Runnable() {
+                        @Override
+                        public void run() {
+                            mInterface.onShowPreview(mOutputUri, reachedZero);
+                        }
+                    },
+                    100);
             return;
         }
 
-        if (mCamera != null)
-            mCamera.lock();
+        if (mCamera != null) mCamera.lock();
         releaseRecorder();
         closeCamera();
 
-        if (!mInterface.didRecord())
-            mOutputUri = null;
+        if (!mInterface.didRecord()) mOutputUri = null;
 
         setImageRes(mButtonVideo, mInterface.iconRecord());
-        if (!CameraUtil.isChromium())
+        if (!CameraUtil.isChromium()) {
             mButtonFacing.setVisibility(View.VISIBLE);
+            mButtonFlash.setVisibility(View.VISIBLE);
+        }
         if (mInterface.getRecordingStart() > -1 && getActivity() != null)
-        mReachedZero=reachedZero;
-        stopCounter();
-    }
+            mInterface.onShowPreview(mOutputUri, reachedZero);
 
-    @Override
-    public void showPreView() {
-        super.showPreView();
-        mInterface.onShowPreview(this,mOutputUri, mReachedZero);
+        stopCounter();
     }
 
     private void setupFlashMode() {
         String flashMode = null;
-        switch (mInterface.getFlashMode()) {
-            case BaseCaptureActivity.FLASH_MODE_AUTO:
-                flashMode = Camera.Parameters.FLASH_MODE_AUTO;
-                break;
-            case BaseCaptureActivity.FLASH_MODE_ALWAYS_ON:
-                flashMode = Camera.Parameters.FLASH_MODE_ON;
-                break;
-            case BaseCaptureActivity.FLASH_MODE_OFF:
-                flashMode = Camera.Parameters.FLASH_MODE_OFF;
-            default:
-                break;
-        }
-        if (flashMode != null) {
-            Camera.Parameters parameters = mCamera.getParameters();
-            parameters.setFlashMode(flashMode);
-            mCamera.setParameters(parameters);
+        if (mInterface.useStillshot()) {
+            switch (mInterface.getFlashMode()) {
+                case BaseCaptureActivity.FLASH_MODE_AUTO:
+                    flashMode = Camera.Parameters.FLASH_MODE_AUTO;
+                    break;
+                case BaseCaptureActivity.FLASH_MODE_ALWAYS_ON:
+                    flashMode = Camera.Parameters.FLASH_MODE_ON;
+                    break;
+                case BaseCaptureActivity.FLASH_MODE_OFF:
+                    flashMode = Camera.Parameters.FLASH_MODE_OFF;
+                default:
+                    break;
+            }
+            if (flashMode != null) {
+                Camera.Parameters parameters = mCamera.getParameters();
+                parameters.setFlashMode(flashMode);
+                mCamera.setParameters(parameters);
+            }
+        } else if (!mInterface.useStillshot()) {
+            switch (mInterface.getFlashModeVideo()) {
+                case BaseCaptureActivity.FLASH_MODE_ALWAYS_ON:
+                    flashMode = Camera.Parameters.FLASH_MODE_ON;
+                    Log.d(TAG, "setFlashMode: video flash mode is ON.");
+                    break;
+                case BaseCaptureActivity.FLASH_MODE_OFF:
+                    Log.d(TAG, "setFlashMode: video flash mode is OFF.");
+                    flashMode = Camera.Parameters.FLASH_MODE_OFF;
+                default:
+                    break;
+            }
+            if (flashMode != null) {
+//        mCamera.lock();
+                Camera.Parameters parameters = mCamera.getParameters();
+                parameters.setFlashMode(flashMode);
+                mCamera.setParameters(parameters);
+                mCamera.startPreview();
+            }
         }
     }
 
@@ -577,42 +569,50 @@ public class CameraFragment extends BaseCameraFragment implements View.OnClickLi
 
     @Override
     public void takeStillshot() {
-        Camera.ShutterCallback shutterCallback = new Camera.ShutterCallback() {
-            public void onShutter() {
-                //Log.d(TAG, "onShutter'd");
-            }
-        };
-        Camera.PictureCallback rawCallback = new Camera.PictureCallback() {
-            public void onPictureTaken(byte[] data, Camera camera) {
-                //Log.d(TAG, "onPictureTaken - raw. Raw is null: " + (data == null));
-            }
-        };
-        Camera.PictureCallback jpegCallback = new Camera.PictureCallback() {
-            public void onPictureTaken(final byte[] data, Camera camera) {
-                //Log.d(TAG, "onPictureTaken - jpeg, size: " + data.length);
-                final File outputPic = getOutputPictureFile();
-                // lets save the image to disk
-                ImageUtil.saveToDiskAsync(data, outputPic, new ICallback() {
-                    @Override
-                    public void done(Exception e) {
-                        if (e == null) {
-                            Log.d("CameraFragment", "Picture saved to disk - jpeg, size: " + data.length);
-                            mOutputUri = Uri.fromFile(outputPic).toString();
-                            mInterface.onShowStillshot(mOutputUri);
-                            //mCamera.startPreview();
-                            mButtonStillshot.setEnabled(true);
-                        } else {
-                            throwError(e);
-                        }
+        Log.d(TAG, "takeStillshot: taking stillshot.");
+        Camera.ShutterCallback shutterCallback =
+                new Camera.ShutterCallback() {
+                    public void onShutter() {
+                        //Log.d(TAG, "onShutter'd");
                     }
-                });
-            }
-        };
+                };
+        Camera.PictureCallback rawCallback =
+                new Camera.PictureCallback() {
+                    public void onPictureTaken(byte[] data, Camera camera) {
+                        Log.d(TAG, "onPictureTaken - raw. Raw is null: " + (data == null));
+                    }
+                };
+        Camera.PictureCallback jpegCallback =
+                new Camera.PictureCallback() {
+                    public void onPictureTaken(final byte[] data, Camera camera) {
+                        Log.d(TAG, "onPictureTaken - jpeg, size: " + data.length);
+                        final File outputPic = getOutputPictureFile();
+                        // lets save the image to disk
+                        ImageUtil.saveToDiskAsync(
+                                data,
+                                outputPic,
+                                new ICallback() {
+                                    @Override
+                                    public void done(Exception e) {
+                                        if (e == null) {
+                                            Log.d(TAG, "Picture saved to disk - jpeg, size: " + data.length);
+                                            mOutputUri = Uri.fromFile(outputPic).toString();
+                                            mInterface.onShowStillshot(mOutputUri);
+                                            //mCamera.startPreview();
+                                            mButtonStillshot.setEnabled(true);
+                                        } else {
+                                            throwError(e);
+                                        }
+                                    }
+                                }
+                        );
+                    }
+                };
 
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-//            // We could have configurable shutter sound here
-//            mCamera.enableShutterSound(false);
-//        }
+        //        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+        //            // We could have configurable shutter sound here
+        //            mCamera.enableShutterSound(false);
+        //        }
 
         mButtonStillshot.setEnabled(false);
         mCamera.takePicture(shutterCallback, rawCallback, jpegCallback);
@@ -622,8 +622,7 @@ public class CameraFragment extends BaseCameraFragment implements View.OnClickLi
         @Override
         public int compare(Camera.Size lhs, Camera.Size rhs) {
             // We cast here to ensure the multiplications won't overflow
-            return Long.signum((long) lhs.width * lhs.height -
-                    (long) rhs.width * rhs.height);
+            return Long.signum((long) lhs.width * lhs.height - (long) rhs.width * rhs.height);
         }
     }
 }

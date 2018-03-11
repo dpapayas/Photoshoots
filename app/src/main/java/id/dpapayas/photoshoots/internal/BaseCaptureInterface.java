@@ -14,7 +14,7 @@ public interface BaseCaptureInterface {
 
     void onRetry(@Nullable String outputUri);
 
-    void onShowPreview(Fragment fragment, @Nullable String outputUri, boolean countdownIsAtZero);
+    void onShowPreview(@Nullable String outputUri, boolean countdownIsAtZero);
 
     void onShowStillshot(String outputUri);
 
@@ -50,6 +50,8 @@ public interface BaseCaptureInterface {
     Object getBackCamera();
 
     void useMedia(String uri);
+
+    void addToStory(String uri);
 
     boolean shouldAutoSubmit();
 
@@ -111,15 +113,21 @@ public interface BaseCaptureInterface {
     @DrawableRes
     int iconStillshot();
 
-    /**
-     * @return true if we only want to take photographs instead of video capture
-     */
+    /** @return true if we only want to take photographs instead of video capture */
     boolean useStillshot();
+
+//  void setUseStillshot(boolean bool);
 
     void toggleFlashMode();
 
+    void toggleFlashModeVideo();
+
+
     @BaseCaptureActivity.FlashMode
     int getFlashMode();
+
+    @BaseCaptureActivity.FlashMode
+    int getFlashModeVideo();
 
     @DrawableRes
     int iconFlashAuto();
@@ -139,6 +147,4 @@ public interface BaseCaptureInterface {
     boolean audioDisabled();
 
     boolean shouldHideCameraFacing();
-
-    boolean showGuide();
 }

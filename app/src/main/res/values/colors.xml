@@ -386,4 +386,12 @@
     <color name="cart">#F6A623</color>
 
     <color name="blue_primary">#2196F3</color>
+
+    <color name="mcam_color_light">#FAFAFA</color>
+    <color name="mcam_color_dark">#424242</color>
+
+    <color name="grey">#bfbfbf</color>
+    <color name="link_blue">#4d94ff</color>
+    <color name="darkRed">#cc0000</color>
+    <color name="colordarkRed">#cc0000</color>
 </resources>
