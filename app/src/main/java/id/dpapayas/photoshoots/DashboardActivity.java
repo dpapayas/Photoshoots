@@ -38,7 +38,6 @@ import id.dpapayas.photoshoots.util.SpacesItemDecoration;
 
 public class DashboardActivity extends AppCompatActivity {
 
-
     @BindView(R.id.layHeadLeft)
     RelativeLayout layHeadLeft;
     @BindView(R.id.etSearch)
@@ -75,15 +74,31 @@ public class DashboardActivity extends AppCompatActivity {
 
         fetchImages();
 
+        recyclerView.addOnItemTouchListener(new RecyclerTouchListener(this,
+                recyclerView, new ClickListener() {
+            @Override
+            public void onClick(View view, final int position) {
+                Intent intent = new Intent(DashboardActivity.this, PreviewVideoACTActivity.class);
+                startActivity(intent);
+            }
+
+            @Override
+            public void onLongClick(View view, int position) {
+
+            }
+        }));
     }
 
     @OnClick({R.id.layHeadLeft, R.id.layHeadRight})
     public void onViewClicked(View view) {
+        Intent intent;
         switch (view.getId()) {
             case R.id.layHeadLeft:
+                intent = new Intent(DashboardActivity.this, ProfileActivity.class);
+                startActivity(intent);
                 break;
             case R.id.layHeadRight:
-                Intent intent = new Intent(DashboardActivity.this, CameraActivity.class);
+                intent = new Intent(DashboardActivity.this, CameraActivity.class);
                 startActivity(intent);
                 break;
         }

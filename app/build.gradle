@@ -43,7 +43,6 @@ android {
 
 ext {
     support = '27.1.0'
-    glide = '3.7.0'
     playServices = '11.0.2'
     butterknife = '8.8.1'
     sdp = '1.0.4'
@@ -82,6 +81,8 @@ dependencies {
     implementation 'com.googlecode.mp4parser:isoparser:1.1.21'
     implementation 'de.hdodenhof:circleimageview:2.2.0'
     implementation 'com.android.support:multidex:1.0.3'
+    implementation 'de.hdodenhof:circleimageview:2.2.0'
+    implementation 'com.github.hackware1993:MagicIndicator:1.5.0'
     annotationProcessor 'com.github.bumptech.glide:compiler:4.6.1'
     annotationProcessor "com.jakewharton:butterknife-compiler:$butterknife"
     testImplementation 'junit:junit:4.12'

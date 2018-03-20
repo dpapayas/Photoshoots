@@ -22,7 +22,7 @@ import id.dpapayas.photoshoots.model.Image;
  * Created by Lincoln on 31/03/16.
  */
 
-public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.MyViewHolder> {
+public class ProfileSlideAdapter extends RecyclerView.Adapter<ProfileSlideAdapter.MyViewHolder> {
 
     private List<Image> images;
     private Context mContext;
@@ -37,7 +37,7 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.MyViewHo
     }
 
 
-    public GalleryAdapter(Context context, List<Image> images) {
+    public ProfileSlideAdapter(Context context, List<Image> images) {
         mContext = context;
         this.images = images;
     }
@@ -45,7 +45,7 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.MyViewHo
     @Override
     public MyViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View itemView = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.gallery_thumbnail, parent, false);
+                .inflate(R.layout.item_profile, parent, false);
 
         return new MyViewHolder(itemView);
     }
