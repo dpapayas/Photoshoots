@@ -149,7 +149,7 @@ public abstract class BaseCaptureActivity extends AppCompatActivity
             final boolean isPrimaryDark = CameraUtil.isColorDark(primaryColor);
             final Window window = getWindow();
             window.setStatusBarColor(CameraUtil.darkenColor(primaryColor));
-            window.setNavigationBarColor(isPrimaryDark ? primaryColor : Color.BLUE);
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 final View view = window.getDecorView();
                 int flags = view.getSystemUiVisibility();
@@ -181,6 +181,8 @@ public abstract class BaseCaptureActivity extends AppCompatActivity
                 .addFlags(
                         WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
                                 | WindowManager.LayoutParams.FLAG_FULLSCREEN);
+
+        FullScreencall();
     }
 
     private void checkPermissions() {
@@ -961,5 +963,17 @@ public abstract class BaseCaptureActivity extends AppCompatActivity
     @Override
     public boolean shouldHideCameraFacing() {
         return !getIntent().getBooleanExtra(CameraIntentKey.ALLOW_CHANGE_CAMERA, false);
+    }
+
+    public void FullScreencall() {
+        if(Build.VERSION.SDK_INT > 11 && Build.VERSION.SDK_INT < 19) { // lower api
+            View v = this.getWindow().getDecorView();
+            v.setSystemUiVisibility(View.GONE);
+        } else if(Build.VERSION.SDK_INT >= 19) {
+            //for new api versions.
+            View decorView = getWindow().getDecorView();
+            int uiOptions = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
+            decorView.setSystemUiVisibility(uiOptions);
+        }
     }
 }

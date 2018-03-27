@@ -60,15 +60,6 @@ public class CameraActivity extends AppCompatActivity {
 
     private int mStartType = RESULT_START_VIDEO;
 
-    AmazonS3Client s3;
-    BasicAWSCredentials credentials;
-    TransferUtility transferUtility;
-    TransferObserver observer;
-
-    String key = "YFGGC6GCT6I6WT3SWIPO";
-    String secret = "8ACm2O8JY4tcZeklNIEBET90oYEr+LRWLZ6+mpxpWv4";
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -76,88 +67,10 @@ public class CameraActivity extends AppCompatActivity {
         ButterKnife.bind(this);
 
         init();
-//        start.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                if (ContextCompat.checkSelfPermission(CameraActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
-//                        && ContextCompat.checkSelfPermission(CameraActivity.this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
-//                        && ContextCompat.checkSelfPermission(CameraActivity.this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
-//                        && ContextCompat.checkSelfPermission(CameraActivity.this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-//                    startRecordVideo();
-//                } else {
-//                    ActivityCompat.requestPermissions(CameraActivity.this, new String[]{
-//                            Manifest.permission.WRITE_EXTERNAL_STORAGE,
-//                            Manifest.permission.READ_EXTERNAL_STORAGE,
-//                            Manifest.permission.CAMERA,
-//                            Manifest.permission.RECORD_AUDIO}, CHECK_PERMISSION);
-//                }
-//
-//            }
-//        });
-
 
         btn_upload.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-
-//                try {
-//                    UploadFile();
-//                } catch (NoSuchAlgorithmException e) {
-//                    e.printStackTrace();
-//                } catch (IOException e) {
-//                    e.printStackTrace();
-//                } catch (InvalidKeyException e) {
-//                    e.printStackTrace();
-//                } catch (XmlPullParserException e) {
-//                    e.printStackTrace();
-//                }
-
-
-//                credentials = new BasicAWSCredentials(key, secret);
-//                s3 = new AmazonS3Client(credentials);
-//                transferUtility = new TransferUtility(s3, CameraActivity.this);
-//
-//
-//                File file = new File(file_path_text.getText().toString());
-//                if (!file.exists()) {
-//                    Toast.makeText(CameraActivity.this, "File Not Found!", Toast.LENGTH_SHORT).show();
-//                    return;
-//                }
-//                observer = transferUtility.upload(
-//                        "sgp1.digitaloceanspaces.com",
-//                        "Test_Video",
-//                        file
-//                );
-//
-//                observer.setTransferListener(new TransferListener() {
-//                    @Override
-//                    public void onStateChanged(int id, TransferState state) {
-//
-//                        if (state.COMPLETED.equals(observer.getState())) {
-//
-//                            Toast.makeText(CameraActivity.this, "File Upload Complete", Toast.LENGTH_SHORT).show();
-//                        }
-//                    }
-//
-//                    @Override
-//                    public void onProgressChanged(int id, long bytesCurrent, long bytesTotal) {
-//
-//
-//                        long _bytesCurrent = bytesCurrent;
-//                        long _bytesTotal = bytesTotal;
-//
-//                        float percentage = ((float) _bytesCurrent / (float) _bytesTotal * 100);
-//                        Log.d("percentage", "" + percentage);
-//                        pb.setProgress((int) percentage);
-//                        _status.setText(percentage + "%");
-//                    }
-//
-//                    @Override
-//                    public void onError(int id, Exception ex) {
-//
-//                        Toast.makeText(CameraActivity.this, "" + ex.getMessage(), Toast.LENGTH_SHORT).show();
-//                    }
-//                });
 
             }
         });
@@ -222,50 +135,9 @@ public class CameraActivity extends AppCompatActivity {
 
     }
 
-//    @Override
-//    protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
-//        super.onActivityResult(requestCode, resultCode, intent);
-//        if (resultCode == RESULT_OK) {
-//            switch (requestCode) {
-//                case CAMERA_RQ:
-//                    try {
-//                        String filePath = intent.getStringExtra("videoUrl");
-//                        Log.e("lzf_video", filePath);
-//                        if (filePath != null && !filePath.equals("")) {
-//                            if (filePath.startsWith("file://")) {
-//                                filePath = intent.getStringExtra("videoUrl").substring(7, filePath.length());
-//                                file_path_text.setText(filePath);
-//                            }
-//                        }
-//                    } catch (Exception ex) {
-//
-//                    }
-//                    break;
-//            }
-//        }
-//    }
-
-
     @OnClick(R.id.btnUpload)
     public void onViewClicked() {
     }
-
-//    public void UploadFile() throws NoSuchAlgorithmException, IOException, InvalidKeyException, XmlPullParserException {
-//        try {
-//            MinioClient minioClient = new MinioClient("sgp1.digitaloceanspaces.com", key, secret);
-//
-//            boolean isExist = minioClient.bucketExists("teststrip");
-//            if (isExist) {
-//                System.out.println("Bucket already exists.");
-//            } else {
-//                minioClient.makeBucket("teststrip");
-//            }
-//
-//            minioClient.putObject("teststrip", "Test_Video", file_path_text.getText().toString());
-//        } catch (MinioException e) {
-//            System.out.println("Error occurred: " + e);
-//        }
-//    }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
