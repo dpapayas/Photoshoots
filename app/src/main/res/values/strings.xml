@@ -147,4 +147,10 @@
     <string name="media_index">media_index</string>
     <string name="media_source">media_source</string>
 
+    <string name="loading">Loading…</string>
+    <string name="log_error_occurred">"Error occurred: "</string>
+    <string name="drawer_open">Open</string>
+    <string name="drawer_close">Close</string>
+
+    <string name="web_client_id">AIzaSyD7iw-OEkh7WWKAgAIRA_Rg_xOxWM8eLjQ</string>
 </resources>

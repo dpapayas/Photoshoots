@@ -1,6 +1,5 @@
 package id.dpapayas.photoshoots;
 
-import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -11,14 +10,21 @@ import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.VideoView;
 
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonArrayRequest;
+import com.google.android.exoplayer2.DefaultLoadControl;
+import com.google.android.exoplayer2.DefaultRenderersFactory;
+import com.google.android.exoplayer2.ExoPlayerFactory;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.Timeline;
+import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
+import com.google.android.exoplayer2.source.ExtractorMediaSource;
+import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
+import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
+import com.google.android.exoplayer2.ui.SimpleExoPlayerView;
 import com.google.android.exoplayer2.upstream.BandwidthMeter;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
@@ -51,8 +57,8 @@ public class PlayerVideoListActivity extends AppCompatActivity {
     RecyclerView recyclerview1;
     @BindView(R.id.toolbar)
     CenteredToolbar toolbar;
-    @BindView(R.id.splashVideoView)
-    VideoView mSplashVideoView;
+    @BindView(R.id.player_view)
+    SimpleExoPlayerView simpleExoPlayerView;
 
     private Uri mUri;
 
@@ -154,19 +160,47 @@ public class PlayerVideoListActivity extends AppCompatActivity {
         mediaDataSourceFactory = new DefaultDataSourceFactory(this, Util.getUserAgent(this, "mediaPlayerSample"), (TransferListener<? super DataSource>) bandwidthMeter);
         window = new Timeline.Window();
 
-        playVideo();
-        initView();
+        initializePlayer();
     }
 
-    private void playVideo() {
-        mSplashVideoView.setZOrderOnTop(true);
-        mSplashVideoView.start();
-    }
+    private void initializePlayer() {
 
-    private void initView() {
-        mUri = Uri.parse(url_video);
-        mSplashVideoView.setMediaController(null);
-        mSplashVideoView.setVideoURI(mUri);
+        simpleExoPlayerView.requestFocus();
+
+//        TrackSelection.Factory videoTrackSelectionFactory =
+//                new AdaptiveTrackSelection.Factory(bandwidthMeter);
+//
+//        trackSelector = new DefaultTrackSelector(videoTrackSelectionFactory);
+//
+//        player = ExoPlayerFactory.newSimpleInstance(this, trackSelector);
+//
+//        simpleExoPlayerView.setPlayer(player);
+//
+//        player.setPlayWhenReady(shouldAutoPlay);
+////        DefaultExtractorsFactory extractorsFactory = new DefaultExtractorsFactory();
+////        MediaSource mediaSource = new HlsMediaSource(Uri.parse(url_video),
+////                mediaDataSourceFactory, null, null);
+//
+        DefaultExtractorsFactory extractorsFactory = new DefaultExtractorsFactory();
+//
+//        MediaSource mediaSource = new ExtractorMediaSource(Uri.parse(url_video),
+//                mediaDataSourceFactory, extractorsFactory, null, null);
+//
+//        player.prepare(mediaSource);
+
+        if (player == null) {
+            player = ExoPlayerFactory.newSimpleInstance(new DefaultRenderersFactory(this),
+                    new DefaultTrackSelector(), new DefaultLoadControl());
+            simpleExoPlayerView.setPlayer(player);
+            player.setPlayWhenReady(shouldAutoPlay);
+        }
+
+        MediaSource mediaSource = new ExtractorMediaSource(Uri.parse(url_video),
+                mediaDataSourceFactory, extractorsFactory, null, null);
+
+        player.prepare(mediaSource, true, false);
+        simpleExoPlayerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_ZOOM);
+
     }
 
 

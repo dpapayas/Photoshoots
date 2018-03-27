@@ -6,6 +6,8 @@ import android.text.TextUtils;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.Volley;
+import com.firebase.client.Firebase;
+import com.google.firebase.FirebaseApp;
 
 public class AppController extends Application {
 
@@ -20,6 +22,8 @@ public class AppController extends Application {
     public void onCreate() {
         super.onCreate();
         mInstance = this;
+        FirebaseApp.initializeApp(this);
+        Firebase.setAndroidContext(this);
     }
 
     public static synchronized AppController getInstance() {

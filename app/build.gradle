@@ -49,7 +49,7 @@ ext {
     retrofit = '2.1.0'
     gson = '2.7'
     materialColor = '1.1.0'
-    firebase = '11.8.0'
+    firebase = '12.0.0'
 }
 
 dependencies {
@@ -71,6 +71,8 @@ dependencies {
     implementation "com.google.firebase:firebase-core:$firebase"
     implementation "com.google.firebase:firebase-auth:$firebase"
     implementation "com.google.firebase:firebase-database:$firebase"
+    implementation "com.google.android.gms:play-services-auth:$firebase"
+    implementation 'com.firebase:firebase-client-android:2.5.0'
     implementation 'com.amazonaws:aws-android-sdk-core:2.3.3'
     implementation 'com.amazonaws:aws-android-sdk-s3:2.3.3'
     implementation 'com.amazonaws:aws-android-sdk-ddb:2.3.3'
@@ -89,3 +91,4 @@ dependencies {
     androidTestImplementation 'com.android.support.test:runner:1.0.1'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
 }
+apply plugin: 'com.google.gms.google-services'

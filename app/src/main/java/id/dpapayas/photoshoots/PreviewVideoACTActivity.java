@@ -12,6 +12,8 @@ import android.widget.ImageView;
 import android.widget.RelativeLayout;
 
 import com.bumptech.glide.Glide;
+import com.google.android.exoplayer2.DefaultLoadControl;
+import com.google.android.exoplayer2.DefaultRenderersFactory;
 import com.google.android.exoplayer2.ExoPlayerFactory;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.Timeline;
@@ -21,6 +23,7 @@ import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 import com.google.android.exoplayer2.trackselection.TrackSelection;
+import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
 import com.google.android.exoplayer2.ui.SimpleExoPlayerView;
 import com.google.android.exoplayer2.upstream.BandwidthMeter;
 import com.google.android.exoplayer2.upstream.DataSource;
@@ -56,7 +59,7 @@ public class PreviewVideoACTActivity extends AppCompatActivity {
     private BandwidthMeter bandwidthMeter;
 
     String url_video = "https://conz.sgp1.digitaloceanspaces.com/mp4/potrait.mp4";
-    String url_image = "https://conz.sgp1.digitaloceanspaces.com/thumbnails/vid_4.png";
+    String url_image = "https://static1.squarespace.com/static/50b81b06e4b05a92145e5191/t/520d4038e4b0cc1763cfb85b/1376600122215/Untaped.jpg?format=500w";
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -92,26 +95,39 @@ public class PreviewVideoACTActivity extends AppCompatActivity {
 
         simpleExoPlayerView.requestFocus();
 
-        TrackSelection.Factory videoTrackSelectionFactory =
-                new AdaptiveTrackSelection.Factory(bandwidthMeter);
-
-        trackSelector = new DefaultTrackSelector(videoTrackSelectionFactory);
-
-        player = ExoPlayerFactory.newSimpleInstance(this, trackSelector);
-
-        simpleExoPlayerView.setPlayer(player);
-
-        player.setPlayWhenReady(shouldAutoPlay);
-//        DefaultExtractorsFactory extractorsFactory = new DefaultExtractorsFactory();
-//        MediaSource mediaSource = new HlsMediaSource(Uri.parse(url_video),
-//                mediaDataSourceFactory, null, null);
-
+//        TrackSelection.Factory videoTrackSelectionFactory =
+//                new AdaptiveTrackSelection.Factory(bandwidthMeter);
+//
+//        trackSelector = new DefaultTrackSelector(videoTrackSelectionFactory);
+//
+//        player = ExoPlayerFactory.newSimpleInstance(this, trackSelector);
+//
+//        simpleExoPlayerView.setPlayer(player);
+//
+//        player.setPlayWhenReady(shouldAutoPlay);
+////        DefaultExtractorsFactory extractorsFactory = new DefaultExtractorsFactory();
+////        MediaSource mediaSource = new HlsMediaSource(Uri.parse(url_video),
+////                mediaDataSourceFactory, null, null);
+//
         DefaultExtractorsFactory extractorsFactory = new DefaultExtractorsFactory();
+//
+//        MediaSource mediaSource = new ExtractorMediaSource(Uri.parse(url_video),
+//                mediaDataSourceFactory, extractorsFactory, null, null);
+//
+//        player.prepare(mediaSource);
+
+        if (player == null) {
+            player = ExoPlayerFactory.newSimpleInstance(new DefaultRenderersFactory(this),
+                    new DefaultTrackSelector(), new DefaultLoadControl());
+            simpleExoPlayerView.setPlayer(player);
+            player.setPlayWhenReady(shouldAutoPlay);
+        }
 
         MediaSource mediaSource = new ExtractorMediaSource(Uri.parse(url_video),
                 mediaDataSourceFactory, extractorsFactory, null, null);
 
-        player.prepare(mediaSource);
+        player.prepare(mediaSource, true, false);
+        simpleExoPlayerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_ZOOM);
 
     }
 
