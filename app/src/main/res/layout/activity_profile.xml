@@ -94,7 +94,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_centerInParent="true"
-                        android:layout_margin="@dimen/_10sdp"
+                        android:layout_margin="@dimen/_8sdp"
                         android:orientation="vertical">
 
                         <TextView
@@ -103,7 +103,7 @@
                             android:layout_gravity="center"
                             android:text="2"
                             android:textColor="@color/blue_primary"
-                            android:textSize="@dimen/_18sdp" />
+                            android:textSize="@dimen/_14sdp" />
 
                         <TextView
                             android:layout_width="wrap_content"
@@ -111,7 +111,7 @@
                             android:layout_gravity="center"
                             android:text="Inbox"
                             android:textColor="@color/blue_primary"
-                            android:textSize="@dimen/_12sdp" />
+                            android:textSize="@dimen/_8sdp" />
 
                     </LinearLayout>
 
@@ -131,7 +131,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_centerInParent="true"
-                        android:layout_margin="@dimen/_10sdp"
+                        android:layout_margin="@dimen/_8sdp"
                         android:orientation="vertical">
 
                         <TextView
@@ -140,7 +140,7 @@
                             android:layout_gravity="center"
                             android:text="5"
                             android:textColor="@color/blue_primary"
-                            android:textSize="@dimen/_18sdp" />
+                            android:textSize="@dimen/_14sdp" />
 
                         <TextView
                             android:layout_width="wrap_content"
@@ -148,7 +148,7 @@
                             android:layout_gravity="center"
                             android:text="Reply"
                             android:textColor="@color/blue_primary"
-                            android:textSize="@dimen/_12sdp" />
+                            android:textSize="@dimen/_8sdp" />
 
                     </LinearLayout>
 
@@ -168,7 +168,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_centerInParent="true"
-                        android:layout_margin="@dimen/_10sdp"
+                        android:layout_margin="@dimen/_8sdp"
                         android:orientation="vertical">
 
                         <TextView
@@ -177,7 +177,7 @@
                             android:layout_gravity="center"
                             android:text="236"
                             android:textColor="@color/blue_primary"
-                            android:textSize="@dimen/_18sdp" />
+                            android:textSize="@dimen/_14sdp" />
 
                         <TextView
                             android:layout_width="wrap_content"
@@ -185,7 +185,7 @@
                             android:layout_gravity="center"
                             android:text="Submited"
                             android:textColor="@color/blue_primary"
-                            android:textSize="@dimen/_12sdp" />
+                            android:textSize="@dimen/_8sdp" />
 
                     </LinearLayout>
 

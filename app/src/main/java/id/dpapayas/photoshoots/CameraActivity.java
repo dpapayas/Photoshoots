@@ -39,16 +39,6 @@ import id.dpapayas.photoshoots.camera.MaterialCamera;
 import id.dpapayas.photoshoots.util.FilePaths;
 
 public class CameraActivity extends AppCompatActivity {
-    @BindView(R.id.start)
-    TextView start;
-    @BindView(R.id.path)
-    TextView path;
-    @BindView(R.id.btnUpload)
-    Button btn_upload;
-    @BindView(R.id.progress)
-    ProgressBar pb;
-    @BindView(R.id.percentage)
-    TextView _status;
     private final static int CAMERA_RQ = 6969;
     private final static int DEFAULT_BITRATE = 1024000;
     private static final int RESULT_START_CAMERA = 4567;
@@ -63,18 +53,8 @@ public class CameraActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        ButterKnife.bind(this);
 
         init();
-
-        btn_upload.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-
-            }
-        });
-
     }
 
     private void init() {
@@ -133,10 +113,6 @@ public class CameraActivity extends AppCompatActivity {
                     .start(CAMERA_RQ);
         }
 
-    }
-
-    @OnClick(R.id.btnUpload)
-    public void onViewClicked() {
     }
 
     @Override

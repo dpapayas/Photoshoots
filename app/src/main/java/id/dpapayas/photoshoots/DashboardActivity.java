@@ -50,7 +50,7 @@ public class DashboardActivity extends AppCompatActivity {
     RecyclerView recyclerView;
 
     private String TAG = DashboardActivity.class.getSimpleName();
-    private static final String endpoint = "https://api.androidhive.info/json/glide.json";
+    private static final String endpoint = "https://firebasestorage.googleapis.com/v0/b/photoshoots-197407.appspot.com/o/test.json?alt=media&token=feb010cc-08ca-4227-9024-2de33f73262a";
     private ArrayList<Image> images;
     private GalleryAdapter mAdapter;
 
@@ -78,7 +78,7 @@ public class DashboardActivity extends AppCompatActivity {
                 recyclerView, new ClickListener() {
             @Override
             public void onClick(View view, final int position) {
-                Intent intent = new Intent(DashboardActivity.this, PreviewVideoACTActivity.class);
+                Intent intent = new Intent(DashboardActivity.this, PlayerVideoListActivity.class);
                 startActivity(intent);
             }
 
@@ -195,4 +195,7 @@ public class DashboardActivity extends AppCompatActivity {
         AppController.getInstance().addToRequestQueue(req);
     }
 
+
+
 }
+

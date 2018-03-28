@@ -1,8 +1,10 @@
 package id.dpapayas.photoshoots;
 
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -41,6 +43,7 @@ import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import butterknife.OnClick;
 import butterknife.Unbinder;
 import id.dpapayas.photoshoots.adapter.ProfileSlideAdapter;
 import id.dpapayas.photoshoots.model.Image;
@@ -59,11 +62,13 @@ public class PlayerVideoListActivity extends AppCompatActivity {
     CenteredToolbar toolbar;
     @BindView(R.id.player_view)
     SimpleExoPlayerView simpleExoPlayerView;
+    @BindView(R.id.fab)
+    FloatingActionButton fab;
 
     private Uri mUri;
 
     private String TAG = ProfileActivity.class.getSimpleName();
-    private static final String endpoint = "https://api.androidhive.info/json/glide.json";
+    private static final String endpoint = "https://firebasestorage.googleapis.com/v0/b/photoshoots-197407.appspot.com/o/test.json?alt=media&token=feb010cc-08ca-4227-9024-2de33f73262a";
 
     private SimpleExoPlayer player;
 
@@ -73,9 +78,8 @@ public class PlayerVideoListActivity extends AppCompatActivity {
     private boolean shouldAutoPlay;
     private BandwidthMeter bandwidthMeter;
 
-    String url_video = "https://conz.sgp1.digitaloceanspaces.com/mp4/potrait.mp4";
+    String url_video = "https://firebasestorage.googleapis.com/v0/b/photoshoots-197407.appspot.com/o/videoplayback.mp4?alt=media&token=703ea395-6a68-42d9-bf88-bef7c3db90a8";
     String url_image = "https://conz.sgp1.digitaloceanspaces.com/thumbnails/vid_4.png";
-
 
     Unbinder unbinder;
 
@@ -86,7 +90,6 @@ public class PlayerVideoListActivity extends AppCompatActivity {
     int RecyclerViewItemPosition;
 
     List<Image> list = new ArrayList<>();
-
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -109,13 +112,11 @@ public class PlayerVideoListActivity extends AppCompatActivity {
         horizontalLayout = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
         recyclerview1.setLayoutManager(horizontalLayout);
 
-
         recyclerview1.setAdapter(galleryAdapter);
 
-        int spacingInPixels = getResources().getDimensionPixelSize(R.dimen._1sdp);
+        int spacingInPixels = getResources().getDimensionPixelSize(R.dimen._3sdp);
         recyclerview1.addItemDecoration(new SpacesItemDecoration(spacingInPixels));
 
-        // Adding on item click listener to RecyclerView.
         recyclerview1.addOnItemTouchListener(new RecyclerView.OnItemTouchListener() {
 
             GestureDetector gestureDetector = new GestureDetector(PlayerVideoListActivity.this, new GestureDetector.SimpleOnGestureListener() {
@@ -123,6 +124,8 @@ public class PlayerVideoListActivity extends AppCompatActivity {
                 @Override
                 public boolean onSingleTapUp(MotionEvent motionEvent) {
 
+                    Intent intent = new Intent(PlayerVideoListActivity.this, PreviewVideoACTActivity.class);
+                    startActivity(intent);
                     return true;
                 }
 
@@ -284,7 +287,7 @@ public class PlayerVideoListActivity extends AppCompatActivity {
     public void onStart() {
         super.onStart();
         if (Util.SDK_INT > 23) {
-//            initializePlayer();
+            initializePlayer();
         }
     }
 
@@ -292,7 +295,7 @@ public class PlayerVideoListActivity extends AppCompatActivity {
     public void onResume() {
         super.onResume();
         if ((Util.SDK_INT <= 23 || player == null)) {
-//            initializePlayer();
+            initializePlayer();
         }
     }
 
@@ -300,7 +303,7 @@ public class PlayerVideoListActivity extends AppCompatActivity {
     public void onPause() {
         super.onPause();
         if (Util.SDK_INT <= 23) {
-//            releasePlayer();
+            releasePlayer();
         }
     }
 
@@ -308,7 +311,14 @@ public class PlayerVideoListActivity extends AppCompatActivity {
     public void onStop() {
         super.onStop();
         if (Util.SDK_INT > 23) {
-//            releasePlayer();
+            releasePlayer();
         }
+    }
+
+    @OnClick(R.id.fab)
+    public void onViewClicked() {
+        Intent intent = new Intent(PlayerVideoListActivity.this, CameraActivity.class);
+        intent.putExtra("post", "");
+        startActivity(intent);
     }
 }

@@ -37,15 +37,28 @@
                 android:layout_height="match_parent"
                 android:focusable="true" />
 
+            <android.support.design.widget.FloatingActionButton
+                android:id="@+id/fab"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_above="@+id/recyclerview1"
+                android:layout_margin="@dimen/fab_margin"
+                android:layout_alignParentRight="true"
+                android:layout_marginBottom="@dimen/_10sdp"
+                app:backgroundTint="@color/blue_primary"
+                android:tint="@android:color/white"
+                android:src="@android:drawable/ic_menu_revert" />
+
             <android.support.v7.widget.RecyclerView
                 android:id="@+id/recyclerview1"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_alignParentBottom="true"
                 android:layout_marginBottom="@dimen/_20sdp"
-                android:layout_marginLeft="@dimen/_10sdp"
-
-                android:scrollbars="horizontal" />
+                android:clipToPadding="false"
+                android:paddingLeft="@dimen/_10sdp"
+                android:paddingRight="@dimen/_10sdp"
+                android:scrollbars="none" />
         </RelativeLayout>
     </LinearLayout>
 </android.support.design.widget.CoordinatorLayout>

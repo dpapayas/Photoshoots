@@ -58,8 +58,8 @@ public class PreviewVideoACTActivity extends AppCompatActivity {
     private boolean shouldAutoPlay;
     private BandwidthMeter bandwidthMeter;
 
-    String url_video = "https://conz.sgp1.digitaloceanspaces.com/mp4/potrait.mp4";
-    String url_image = "https://static1.squarespace.com/static/50b81b06e4b05a92145e5191/t/520d4038e4b0cc1763cfb85b/1376600122215/Untaped.jpg?format=500w";
+    String url_video = "https://firebasestorage.googleapis.com/v0/b/photoshoots-197407.appspot.com/o/video%20(2).mp4?alt=media&token=b23375ab-e3d6-4333-a8f5-12d979978bf4";
+    String url_image = "http://4.bp.blogspot.com/-73aR33M3bTA/TntBOVu13GI/AAAAAAAAAC8/BcuCLBsTVDw/s1600/DSCN0718.jpg";
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {

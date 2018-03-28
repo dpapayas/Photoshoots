@@ -36,7 +36,6 @@ public class ProfileSlideAdapter extends RecyclerView.Adapter<ProfileSlideAdapte
         }
     }
 
-
     public ProfileSlideAdapter(Context context, List<Image> images) {
         mContext = context;
         this.images = images;

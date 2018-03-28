@@ -13,6 +13,8 @@ import android.view.MenuItem;
 import android.widget.ImageView;
 import android.widget.Switch;
 
+import com.bumptech.glide.Glide;
+
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import id.dpapayas.photoshoots.util.CenteredToolbar;
@@ -46,11 +48,10 @@ public class PreviewStatusActivity extends AppCompatActivity {
         getSupportActionBar().setTitle("App Key");
         String temp = intent.getStringExtra("filepath");
 
-        Bitmap thumb = ThumbnailUtils.createVideoThumbnail(temp,
-                MediaStore.Images.Thumbnails.MINI_KIND);
-
-        ivPreview.setImageBitmap(thumb);
-
+        Glide.with(getApplicationContext())
+                .asBitmap()
+                .load("https://4.bp.blogspot.com/-JTjWScQZ2pE/V2zIbjRaqcI/AAAAAAAAACg/SOH7Slsp3rwoC5crLTLRdVdech964ncSwCLcB/s1600/penyuluhan.jpg")
+                .into(ivPreview);
     }
 
     @Override
@@ -67,6 +68,8 @@ public class PreviewStatusActivity extends AppCompatActivity {
                 finish();
                 break;
             case R.id.action_submit:
+                Intent intent = new Intent(PreviewStatusActivity.this, DashboardActivity.class);
+                startActivity(intent);
 
                 return true;
         }
